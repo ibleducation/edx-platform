@@ -12,7 +12,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from student.tests.factories import CourseEnrollmentFactory, UserFactory
-from ..utilities import get_url_to_last_completed_block, UnavailableCompletionData
+from lms.djangoapps.completion.utilities import get_url_to_last_completed_block, UnavailableCompletionData
 
 
 @skip_unless_lms
