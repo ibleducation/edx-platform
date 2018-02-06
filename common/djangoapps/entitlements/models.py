@@ -1,15 +1,15 @@
 import uuid as uuid_tools
 from datetime import timedelta
-from util.date_utils import strftime_localized
 
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.timezone import now
+from model_utils.models import TimeStampedModel
 
 from lms.djangoapps.certificates.models import GeneratedCertificate
-from model_utils.models import TimeStampedModel
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from util.date_utils import strftime_localized
 
 
 class CourseEntitlementPolicy(models.Model):
@@ -334,7 +334,7 @@ class CourseEntitlementSupportDetail(TimeStampedModel):
 
     def __unicode__(self):
         """Unicode representation of an Entitlement"""
-        return u'Course Entitlement Suppor Detail: entitlement: {}, support_user: {}, reason: {}'\
+        return u'Course Entitlement Support Detail: entitlement: {}, support_user: {}, reason: {}'\
             .format(
                 self.entitlement,
                 self.support_user,
