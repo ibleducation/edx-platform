@@ -11,12 +11,15 @@ self.real_user = getattr(user, 'real_user', user)
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 
+from lms.djangoapps.completion.utils import retrieve_last_block_completed_url
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
+
 %>
 
 <%
     profile_image_url = get_profile_image_urls_for_user(self.real_user)['medium']
     username = self.real_user.username
+    resume_block = retrieve_last_block_completed_url(username)
 %>
 
 
@@ -32,6 +35,9 @@ from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_
         <span class="fa fa-caret-down" aria-hidden="true"></span>
     </div>
     <div class="dropdown-user-menu hidden" aria-label=${_("More Options")} role="menu" id="user-menu" tabindex="-1">
+        % if resume_block:
+            <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${resume_block}" role="menuitem">${_("Resume Your Last Course")}</a></div>
+        % endif
         <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${reverse('dashboard')}" role="menuitem">${_("Dashboard")}</a></div>
         <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${reverse('account_settings')}" role="menuitem">${_("Account")}</a></div>
         <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${reverse('logout')}" role="menuitem">${_("Sign Out")}</a></div>

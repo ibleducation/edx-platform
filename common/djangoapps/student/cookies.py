@@ -12,6 +12,7 @@ from django.core.urlresolvers import NoReverseMatch, reverse
 from django.dispatch import Signal
 from django.utils.http import cookie_date
 
+from lms.djangoapps.completion.utils import retrieve_last_block_completed_url
 from student.models import CourseEnrollment
 
 CREATE_LOGON_COOKIE = Signal(providing_args=['user', 'response'])
@@ -164,6 +165,9 @@ def get_user_info_cookie_data(request):
         header_urls['learner_profile'] = reverse('learner_profile', kwargs={'username': user.username})
     except NoReverseMatch:
         pass
+
+    # Add 'resume course' last completed block
+    header_urls['resume_block'] = retrieve_last_block_completed_url(user)
 
     # Convert relative URL paths to absolute URIs
     for url_name, url_path in six.iteritems(header_urls):

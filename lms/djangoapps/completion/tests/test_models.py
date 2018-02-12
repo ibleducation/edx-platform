@@ -232,7 +232,6 @@ class BatchCompletionMethodTests(TestCase):
         )
 
     def test_get_course_completions(self):
-
         self.assertEqual(
             models.BlockCompletion.get_course_completions(self.user, self.course_key),
             {
@@ -246,4 +245,10 @@ class BatchCompletionMethodTests(TestCase):
         self.assertEqual(
             models.BlockCompletion.get_latest_block_completed(self.user, self.course_key).block_key,
             self.block_keys[2]
+        )
+
+    def test_get_latest_sitewide_block_completed(self):
+        self.assertEqual(
+            models.BlockCompletion.get_last_sitewide_block_completed(self.user).block_key,
+            self.block_keys[4]
         )

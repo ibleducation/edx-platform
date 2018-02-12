@@ -393,6 +393,7 @@ class TestCourseOutlineResumeCourse(SharedModuleStoreTestCase, CompletionWaffleT
         ),
         active=True
     )
+    @override_settings(LMS_BASE='test_url:9999')
     @patch('lms.djangoapps.completion.waffle.get_current_site')
     def test_resume_course_with_completion_api(self, get_patched_current_site):
         """

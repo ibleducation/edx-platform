@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils.translation import ugettext as _
+
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField, UsageKeyField
 from opaque_keys.edx.keys import CourseKey
@@ -180,6 +181,22 @@ class BlockCompletion(TimeStampedModel, models.Model):
             return self.block_key.replace(course_key=self.course_key)  # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
         else:
             return self.block_key
+
+    @classmethod
+    def get_last_sitewide_block_completed(cls, user):
+        """
+        query latest completion for user (any course)
+
+        Return value:
+            obj: block completion
+        """
+        try:
+            latest_global_modified_block_completion = cls.objects.filter(
+                user=user,
+            ).latest()
+        except cls.DoesNotExist:
+            return
+        return latest_global_modified_block_completion
 
     @classmethod
     def get_course_completions(cls, user, course_key):
