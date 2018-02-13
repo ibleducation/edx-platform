@@ -101,9 +101,43 @@ source, template_path = Loader(engine).load_template_source(path)
     </%doc>
     <%
         body = capture(caller.body)
+        body_dict = json.loads(body)
+        locale = body_dict['lang']
+        ietf_to_transifex = {
+            'fr': 'fr_CA',
+            'zh-CN': 'zh_CN',
+            'es-419': 'es_419',
+            'ar': 'ar'
+        }
+
+        messages = "{}"
+        try:
+            messages_path = "{base}/studio-frontend/dist/i18n/messages/{locale}.json".format(
+                base=settings.STATIC_ROOT,
+                locale=ietf_to_transifex[locale]
+            )
+            with open(messages_path) as inputfile:
+                messages = inputfile.read()
+        except:
+            messages = "{}"
+
+        localeData = ""
+        try:
+            localeData_path = "{base}/studio-frontend/dist/i18n/locale_data/{locale}.json".format(
+                base=settings.STATIC_ROOT,
+                locale=locale.split('-')[0]
+            )
+            with open(localeData_path) as inputfile:
+                localeData = inputfile.read()
     %>
-    <script type="text/javascript" id='courseContext'>
-      var studioContext = ${ body | n, decode.utf8};
+    <script type="application/javascript" id="SFE_i18n_messages">
+      {{ messages }}
+    </script>
+    <script type="application/javascript" id="SFE_i18n_localeScript">
+      {{ localeData }}
+    </script>
+    <script type="application/javascript" id='courseContext'>
+        var studioContext = ${ body | n, decode.utf8};
     </script>
     <div id="root" class="SFE"></div>
     % if settings.STUDIO_FRONTEND_CONTAINER_URL:
