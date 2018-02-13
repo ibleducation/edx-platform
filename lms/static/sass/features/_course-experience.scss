@@ -365,8 +365,6 @@
             @include margin-left(10px);
 
             list-style-type: none;
-            border: 1px solid transparent;
-            border-radius: 2px;
 
             a.outline-item {
               display: flex;
@@ -375,6 +373,16 @@
               padding: ($baseline / 2) 0 ($baseline / 2) 0;
               margin: 0 0 0 ($baseline);
               border-top: 1px solid $border-color;
+            }
+
+            a.outline-item:hover {
+              .complete-checkmark {
+                text-decoration: none;
+              }
+            }
+
+            .vertical-details {
+              float:left;
             }
 
             &:hover,
@@ -399,11 +407,11 @@
 
 // Course outline accordion
 button.accordion-trigger {
-  margin: 2px;
   padding: 10px 0 10px 0;
   border: none;
   width: 100%;
   text-align: left;
+  margin: 0px;
 
   .fa {
     color: $blue;
@@ -412,6 +420,15 @@ button.accordion-trigger {
 
 .accordion-panel.is-hidden {
   display: none;
+}
+
+.fa-check.fa.complete-checkmark {
+  border: 1px solid $green;
+  margin-right: $baseline / 2;
+  border-radius: 100px;
+  color: white;
+  background-color: $green;
+  float: right;
 }
 
 // Course outline

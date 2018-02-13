@@ -10,7 +10,8 @@ from web_fragments.fragment import Fragment
 
 from courseware.courses import get_course_overview_with_access
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
-from openedx.features.course_experience import waffle as waffle
+from openedx.features.course_experience import waffle as course_experience_waffle
+from completion import waffle as completion_waffle
 
 from ..utils import get_course_outline_block_tree
 from util.milestones_helpers import get_course_content_milestones
@@ -32,14 +33,17 @@ class CourseOutlineFragmentView(EdxFragmentView):
         if not course_block_tree:
             return None
 
+        # TODO: EDUCATOR-2283 Remove 'show_visual_progress' from context
+        # and remove the check for it in the HTML file
         context = {
             'csrf': csrf(request)['csrf_token'],
             'course': course_overview,
-            'blocks': course_block_tree
+            'blocks': course_block_tree,
+            'show_visual_progress': completion_waffle.visual_progress_enabled(course_key)
         }
 
         # TODO: EDUCATOR-2283 Remove this check when the waffle flag is turned on in production
-        if waffle.new_course_outline_enabled(course_key=course_key):
+        if course_experience_waffle.new_course_outline_enabled(course_key=course_key):
             xblock_display_names = self.create_xblock_id_and_name_dict(course_block_tree)
 
             gated_content = self.get_content_milestones(request, course_key)
