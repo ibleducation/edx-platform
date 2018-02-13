@@ -4,6 +4,7 @@ Support tool for changing and granting course entitlements
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.http import HttpResponseBadRequest
+from django.utils.decorators import method_decorator
 from edx_rest_framework_extensions.authentication import JwtAuthentication
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
@@ -13,6 +14,7 @@ from entitlements.api.v1.permissions import IsAdminOrAuthenticatedReadOnly
 from entitlements.api.v1.serializers import SupportCourseEntitlementSerializer
 from entitlements.models import CourseEntitlement, CourseEntitlementSupportDetail
 from openedx.core.djangoapps.cors_csrf.authentication import SessionAuthenticationCrossDomainCsrf
+from lms.djangoapps.support.decorators import require_support_permission
 
 
 class EntitlementSupportView(viewsets.ModelViewSet):
@@ -33,6 +35,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
         except (KeyError, User.DoesNotExist):
             return queryset.order_by('created')
 
+    @method_decorator(require_support_permission)
     def update(self, request):
         """ Allows support staff to unexpire a user's entitlement."""
         support_user = request.user
@@ -83,6 +86,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
                 )
             )
 
+    @method_decorator(require_support_permission)
     def create(self, request, *args, **kwargs):
         """ Allows support staff to grant a user a new entitlement for a course. """
         support_user = request.user
