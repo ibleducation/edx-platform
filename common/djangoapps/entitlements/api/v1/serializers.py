@@ -39,7 +39,6 @@ class CourseEntitlementSupportDetailSerializer(serializers.ModelSerializer):
         default=serializers.CurrentUserDefault()
     )
     unenrolled_run = CourseKeyField('unenrolled_run.id')
-    reason = serializers.CharField(allow_null=True)
 
     class Meta:
         model = CourseEntitlementSupportDetail

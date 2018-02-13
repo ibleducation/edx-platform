@@ -334,9 +334,8 @@ class CourseEntitlementSupportDetail(TimeStampedModel):
 
     def __unicode__(self):
         """Unicode representation of an Entitlement"""
-        return u'Course Entitlement Support Detail: entitlement: {}, support_user: {}, reason: {}'\
-            .format(
-                self.entitlement,
-                self.support_user,
-                self.reason,
-            )
+        return u'Course Entitlement Support Detail: entitlement: {}, support_user: {}, reason: {}'.format(
+            self.entitlement,
+            self.support_user,
+            self.reason,
+        )
