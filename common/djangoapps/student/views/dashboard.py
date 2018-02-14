@@ -50,7 +50,7 @@ from student.models import (
 )
 from util.milestones_helpers import get_pre_requisite_courses_not_completed
 from xmodule.modulestore.django import modulestore
-from lms.djangoapps.completion.utils import get_url_to_last_completed_block, UnavailableCompletionData
+from lms.djangoapps.completion.utilities import get_url_to_last_completed_block, UnavailableCompletionData
 
 log = logging.getLogger("edx.student")
 

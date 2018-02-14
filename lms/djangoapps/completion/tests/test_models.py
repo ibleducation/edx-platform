@@ -11,7 +11,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from student.tests.factories import CourseEnrollmentFactory, UserFactory
 
 from .. import models, waffle
-from ..utils import get_url_to_last_completed_block, UnavailableCompletionData
+from ..utilities import get_url_to_last_completed_block, UnavailableCompletionData
 
 
 class PercentValidatorTestCase(TestCase):
