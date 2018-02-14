@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
 from six import text_type
 
-from completion.models import BlockCompletion
+from lms.djangoapps.completion.models import BlockCompletion
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
 from xmodule.modulestore.django import modulestore
 
@@ -99,13 +99,13 @@ def _is_valid_social_username(value):
 
 def retrieve_last_block_completed_url(username):
     """
-
     Completion utility
     From a string 'username' or object User retrieve
     the last course block marked as 'completed' and construct a URL
 
     :param username: str(username) or obj(User)
     :return: block_lms_url
+
     """
     if not isinstance(username, User):
         userobj = User.objects.get(username=username)

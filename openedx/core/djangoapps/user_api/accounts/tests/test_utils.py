@@ -6,7 +6,7 @@ import ddt
 from django.test import TestCase
 from django.test.utils import override_settings
 
-from completion.test_utils import CompletionWaffleTestMixin
+from lms.djangoapps.completion.test_utils import CompletionWaffleTestMixin
 from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_block_completed_url
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from student.models import CourseEnrollment
