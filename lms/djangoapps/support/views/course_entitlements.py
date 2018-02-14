@@ -15,7 +15,6 @@ from entitlements.api.v1.serializers import SupportCourseEntitlementSerializer
 from entitlements.models import CourseEntitlement, CourseEntitlementSupportDetail
 from lms.djangoapps.support.decorators import require_support_permission
 from openedx.core.djangoapps.cors_csrf.authentication import SessionAuthenticationCrossDomainCsrf
-from student.models import CourseEnrollment
 
 REQUIRED_CREATION_FIELDS = ['username_or_email', 'course_uuid', 'reason', 'mode']
 
@@ -77,7 +76,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
             )
         try:
             with transaction.atomic():
-                unenrolled_run = self.unexpire_entitlement(entitlement)
+                unenrolled_run = entitlement.reinstate()
                 CourseEntitlementSupportDetail.objects.create(
                     entitlement=entitlement, reason=CourseEntitlementSupportDetail.LEAVE_SESSION, comments=comments,
                     unenrolled_run=unenrolled_run, support_user=support_user
@@ -88,7 +87,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
             )
         except DatabaseError:
             return HttpResponseBadRequest(
-                u'Failed to unexpire entitlement {entitlement}'.format(entitlement=entitlement))
+                u'Failed to reinstate entitlement {entitlement}'.format(entitlement=entitlement))
 
     @method_decorator(require_support_permission)
     def create(self, request, *args, **kwargs):
@@ -129,21 +128,3 @@ class EntitlementSupportView(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
             data=SupportCourseEntitlementSerializer(instance=entitlement).data
         )
-
-    @staticmethod
-    def unexpire_entitlement(entitlement):
-        """
-        Unenrolls a user from the run in which they have spent the given entitlement and
-        sets the entitlement's expired_at date to null.
-
-        Returns:
-            CourseOverview: course run from which the user has been unenrolled
-        """
-        unenrolled_run = entitlement.enrollment_course_run.course
-        entitlement.expired_at = None
-        CourseEnrollment.unenroll(
-            user=entitlement.enrollment_course_run.user, course_id=unenrolled_run.id, skip_refund=True
-        )
-        entitlement.enrollment_course_run = None
-        entitlement.save()
-        return unenrolled_run
