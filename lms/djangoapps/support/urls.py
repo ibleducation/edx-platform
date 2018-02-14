@@ -6,9 +6,9 @@ from django.conf.urls import url
 from lms.djangoapps.support.views.contact_us import ContactUsView
 from support.views.certificate import CertificatesSupportView
 from support.views.course_entitlements import EntitlementSupportView
-from support.views.enrollments import EnrollmentSupportView, EnrollmentSupportListView
+from support.views.enrollments import EnrollmentSupportListView, EnrollmentSupportView
 from support.views.index import index
-from support.views.manage_user import ManageUserSupportView, ManageUserDetailView
+from support.views.manage_user import ManageUserDetailView, ManageUserSupportView
 from support.views.refund import RefundSupportView
 
 COURSE_ENTITLEMENTS_VIEW = EntitlementSupportView.as_view({
