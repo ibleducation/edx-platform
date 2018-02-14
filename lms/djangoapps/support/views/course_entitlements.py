@@ -9,7 +9,6 @@ from django.utils.decorators import method_decorator
 from edx_rest_framework_extensions.authentication import JwtAuthentication
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
-from six import text_type
 
 from entitlements.api.v1.permissions import IsAdminOrAuthenticatedReadOnly
 from entitlements.api.v1.serializers import SupportCourseEntitlementSerializer
@@ -19,6 +18,7 @@ from openedx.core.djangoapps.cors_csrf.authentication import SessionAuthenticati
 from student.models import CourseEnrollment
 
 REQUIRED_CREATION_FIELDS = ['username_or_email', 'course_uuid', 'reason', 'mode']
+
 
 class EntitlementSupportView(viewsets.ModelViewSet):
     """
@@ -34,7 +34,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
         if username_or_email:
             try:
                 user = User.objects.get(Q(username=username_or_email) | Q(email=username_or_email))
-            except:
+            except User.DoesNotExist:
                 return []
             queryset = queryset.filter(user=user)
             return super(EntitlementSupportView, self).filter_queryset(queryset).order_by('-created')
@@ -42,12 +42,12 @@ class EntitlementSupportView(viewsets.ModelViewSet):
             return []
 
     @method_decorator(require_support_permission)
-    def list (self, request):
+    def list(self, request):
         return super(EntitlementSupportView, self).list(request)
 
     @method_decorator(require_support_permission)
     def update(self, request):
-        """ Allows support staff to unexpire a user's entitlement."""
+        """ Allows support staff to update an existing course entitlement. """
         support_user = request.user
         entitlement_uuid = request.data.get('entitlement_uuid')
         if not entitlement_uuid:
@@ -68,6 +68,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
             return self._reinstate_entitlement(support_user, entitlement, comments)
 
     def _reinstate_entitlement(self, support_user, entitlement, comments):
+        """ Allows support staff to unexpire a user's entitlement."""
         if entitlement.enrollment_course_run is None:
             return HttpResponseBadRequest(
                 u"Entitlement {entitlement} has not been spent on a course run.".format(
@@ -87,10 +88,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
             )
         except DatabaseError:
             return HttpResponseBadRequest(
-                u'Failed to unexpire entitlement to course {course_uuid} for user {username_or_email}'.format(
-                    course_uuid=course_uuid, username_or_email=username_or_email
-                )
-            )
+                u'Failed to unexpire entitlement {entitlement}'.format(entitlement=entitlement))
 
     @method_decorator(require_support_permission)
     def create(self, request, *args, **kwargs):
@@ -110,7 +108,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
                     missing_fields=missing_fields_string
                 )
             )
-        
+
         username_or_email = creation_fields['username_or_email']
         try:
             user = User.objects.get(Q(username=username_or_email) | Q(email=username_or_email))
@@ -120,7 +118,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
                     username_or_email=username_or_email,
                 )
             )
-        
+
         entitlement, _ = CourseEntitlement.objects.create(
             user=user, course_uuid=creation_fields['course_uuid'], mode=creation_fields['mode']
         )
