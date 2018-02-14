@@ -450,10 +450,9 @@ else:
     _csrf_middleware = 'django.middleware.csrf.CsrfViewMiddleware'
 
 MIDDLEWARE_CLASSES = [
+    'openedx.core.djangoapps.monitoring_utils.middleware.MonitoringMemoryMiddleware',
     'crum.CurrentRequestUserMiddleware',
     'openedx.core.djangoapps.request_cache.middleware.RequestCache',
-
-    'openedx.core.djangoapps.monitoring_utils.middleware.MonitoringMemoryMiddleware',
 
     'openedx.core.djangoapps.header_control.middleware.HeaderControlMiddleware',
     'django.middleware.cache.UpdateCacheMiddleware',
@@ -514,6 +513,8 @@ X_FRAME_OPTIONS = 'ALLOW'
 
 # Platform for Privacy Preferences header
 P3P_HEADER = 'CP="Open EdX does not have a P3P policy."'
+
+MEMORY_GRAPH_DIRECTORY = os.path.join(tempfile.mkdtemp(prefix='memory_graphs'), 'cms_{}'.format(os.getpid()))
 
 ############# XBlock Configuration ##########
 

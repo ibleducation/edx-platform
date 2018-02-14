@@ -93,6 +93,12 @@ def should_show_debug_toolbar(request):
         return False
     return True
 
+
+############################## MEMORY MONITORING ##############################
+
+MEMORY_GRAPH_DIRECTORY = REPO_ROOT / 'test_root' / 'log' / 'memory_graphs' / 'lms_{}'.format(os.getpid())
+MIDDLEWARE_CLASSES.insert(0, 'openedx.core.djangoapps.monitoring_utils.middleware.MonitoringMemoryMiddleware')
+
 ########################### PIPELINE #################################
 
 PIPELINE_ENABLED = False

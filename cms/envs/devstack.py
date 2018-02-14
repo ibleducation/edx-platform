@@ -105,6 +105,9 @@ def should_show_debug_toolbar(request):
 # Stacktraces slow down page loads drastically (for pages with lots of queries).
 DEBUG_TOOLBAR_MONGO_STACKTRACES = False
 
+############################## MEMORY MONITORING ##############################
+
+MEMORY_GRAPH_DIRECTORY = REPO_ROOT / 'test_root' / 'log' / 'memory_graphs' / 'cms_{}'.format(os.getpid())
 
 ################################ MILESTONES ################################
 FEATURES['MILESTONES_APP'] = True

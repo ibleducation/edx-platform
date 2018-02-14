@@ -10,12 +10,16 @@ request handlers which do not record custom metrics.
 
 """
 import logging
+import os
 from uuid import uuid4
 
 import psutil
+from objgraph import get_new_ids
 
 from openedx.core.djangoapps.request_cache import get_cache
 from openedx.core.djangoapps.waffle_utils import WaffleSwitchNamespace
+
+from .utils import show_memory_leaks
 
 log = logging.getLogger(__name__)
 try:
@@ -25,6 +29,7 @@ except ImportError:
     newrelic = None  # pylint: disable=invalid-name
 
 
+MONITORING_MEMORY_REQUEST_CACHE_KEY = 'monitoring_memory'
 REQUEST_CACHE_KEY = 'monitoring_custom_metrics'
 WAFFLE_NAMESPACE = 'monitoring_utils'
 
@@ -87,28 +92,46 @@ class MonitoringMemoryMiddleware(object):
     """
     memory_data_key = u'memory_data'
     guid_key = u'guid_key'
+    _graph_current_view = False
 
     def process_request(self, request):
+        """
+        Record pre-request memory usage data
+        """
         if self._is_enabled():
             self._cache[self.guid_key] = unicode(uuid4())
             log_prefix = self._log_prefix(u"Before", request)
-            self._cache[self.memory_data_key] = self._memory_data(log_prefix)
+            self._cache[self.memory_data_key] = self._memory_data(request, log_prefix)
+            MonitoringMemoryMiddleware._graph_current_view = False
+            self._reset_memory_leak_baseline()
 
     def process_response(self, request, response):
+        """
+        Record post-request memory usage data
+        """
         if self._is_enabled():
             log_prefix = self._log_prefix(u"After", request)
-            new_memory_data = self._memory_data(log_prefix)
+            new_memory_data = self._memory_data(request, log_prefix)
 
             log_prefix = self._log_prefix(u"Diff", request)
             self._log_diff_memory_data(log_prefix, new_memory_data, self._cache.get(self.memory_data_key))
         return response
+
+    @classmethod
+    def graph_memory_leaks(cls):
+        """
+        Have this middleware generate memory leak graphs at the end of the
+        current request.  This is a little slow, so only enable it for views
+        which are already suspected to be leaking memory.
+        """
+        cls._graph_current_view = True
 
     @property
     def _cache(self):
         """
         Namespaced request cache for tracking memory usage.
         """
-        return get_cache(name='monitoring_memory')
+        return get_cache(name=MONITORING_MEMORY_REQUEST_CACHE_KEY)
 
     def _log_prefix(self, prefix, request):
         """
@@ -120,11 +143,15 @@ class MonitoringMemoryMiddleware(object):
         cached_guid = self._cache.get(self.guid_key) or u"without_guid"
         return u"{} request '{} {} {}'".format(prefix, request.method, request.path, cached_guid)
 
-    def _memory_data(self, log_prefix):
+    def _memory_data(self, request, log_prefix):
         """
         Returns a dict with information for current memory utilization.
         Uses log_prefix in log statements.
         """
+        if MonitoringMemoryMiddleware._graph_current_view:
+            MonitoringMemoryMiddleware._graph_current_view = False
+            view_name = request.resolver_match.view_name.replace(':', '_')
+            show_memory_leaks(view_name)
         machine_data = psutil.virtual_memory()
 
         process = psutil.Process()
@@ -173,3 +200,12 @@ class MonitoringMemoryMiddleware(object):
         Returns whether this middleware is enabled.
         """
         return WaffleSwitchNamespace(name=WAFFLE_NAMESPACE).is_enabled(u'enable_memory_middleware')
+
+    @staticmethod
+    def _reset_memory_leak_baseline():
+        """
+        Reset the starting point from which the next call to
+        ``objgraph.get_new_ids()`` will count newly created objects.
+        """
+        with open(os.devnull, 'w') as devnull:
+            get_new_ids(file=devnull)
