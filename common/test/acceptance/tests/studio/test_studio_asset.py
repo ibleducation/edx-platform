@@ -3,7 +3,8 @@ Acceptance tests for Studio related to the asset index page.
 """
 
 from common.test.acceptance.fixtures.base import StudioApiLoginError
-from common.test.acceptance.pages.studio.asset_index import AssetIndexPage
+from common.test.acceptance.fixtures.config import ConfigModelFixture
+from common.test.acceptance.pages.studio.asset_index import AssetIndexPage, AssetIndexPageStudioFrontend
 from common.test.acceptance.tests.helpers import skip_if_browser
 from common.test.acceptance.tests.studio.base_studio_test import StudioCourseTest
 
@@ -26,6 +27,9 @@ class AssetIndexTest(StudioCourseTest):
         """
         Populate the children of the test course fixture.
         """
+        import pdb; pdb.set_trace()
+        ConfigModelFixture('/config/assets', {'enabled': True}, 'cms').install()
+        import pdb; pdb.set_trace()
         self.course_fixture.add_asset(['image.jpg', 'textbook.pdf'])
 
     @skip_if_browser('chrome')  # TODO Need to fix test_page_existance for this for chrome browser
@@ -50,3 +54,33 @@ class AssetIndexTest(StudioCourseTest):
         else:
             msg = "Could not open select Type filter"
             raise StudioApiLoginError(msg)
+
+class AssetIndexTestStudioFrontend(StudioCourseTest):
+
+    """
+    Tests for the Asset index page.
+    """
+    def setUp(self, is_staff=False):
+        super(AssetIndexTestStudioFrontend, self).setUp()
+        self.asset_page = AssetIndexPageStudioFrontend(
+            self.browser,
+            self.course_info['org'],
+            self.course_info['number'],
+            self.course_info['run']
+        )
+
+    def populate_course_fixture(self, course_fixture):
+        """
+        Populate the children of the test course fixture.
+        """
+        ConfigModelFixture('/config/assets', {'enabled_for_all_courses': True, 'enabled': True}, 'cms').install()
+        self.course_fixture.add_asset(['image.jpg', 'textbook.pdf'])
+
+    # DO WE STILL NEED THE SKIP_IF_BROWSER?
+    @skip_if_browser('chrome')  # TODO Need to fix test_page_existance for this for chrome browser
+    def test_type_filter_exists(self):
+        """
+        Make sure type filter is on the page.
+        """
+        self.asset_page.visit()
+        assert self.asset_page.filter_element_on_page() is True
