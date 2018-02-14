@@ -42,16 +42,22 @@ class EntitlementSupportView(viewsets.ModelViewSet):
         try:
             username_or_email = self.request.data['user']
             user = User.objects.get(Q(username=username_or_email) | Q(email=username_or_email))
+        except User.DoesNotExist:
+            return HttpResponseBadRequest(
+                u'Could not find user {user}'.format(user=username_or_email)
+            )
+        try:
             course_uuid = request.data['course_uuid']
             reason = request.data['reason']
             comments = request.data.get('comments', None)
-            entitlement = self.get_most_recent_entitlement(user=user, course_uuid=course_uuid)
         except KeyError as err:
             return HttpResponseBadRequest(u'The field {} is required.'.format(text_type(err)))
-        except (User.DoesNotExist, CourseEntitlement.DoesNotExist):
+        try:
+            entitlement = CourseEntitlement.get_most_recent_entitlement(user=user, course_uuid=course_uuid)
+        except CourseEntitlement.DoesNotExist:
             return HttpResponseBadRequest(
-                u'Could not find entitlement to course {course_uuid} for user {username}'.format(
-                    course_uuid=course_uuid, username=username_or_email
+                u'Could not find entitlement to course {course_uuid} for user {user}'.format(
+                    course_uuid=course_uuid, user=username_or_email
                 )
             )
         if entitlement:
@@ -105,30 +111,14 @@ class EntitlementSupportView(viewsets.ModelViewSet):
                     username=username_or_email,
                 )
             )
-        if CourseEntitlement.get_entitlement_if_active(user, course_uuid) is not None:
-            return HttpResponseBadRequest(u'User {user} has an active entitlement in course {course}.'.format(
-                user=username_or_email, course=course_uuid
-            ))
-        else:
-            entitlement = CourseEntitlement.objects.create(user=user, course_uuid=course_uuid, mode=mode)
-            CourseEntitlementSupportDetail.objects.create(
-                entitlement=entitlement, reason=reason, comments=comments, support_user=support_user
-            )
-            return Response(
-                status=status.HTTP_201_CREATED,
-                data=SupportCourseEntitlementSerializer(instance=entitlement).data
-            )
-
-    @staticmethod
-    def get_most_recent_entitlement(user, course_uuid):
-        """
-        Returns the most recently created entitlement for the given user in the given course.
-
-        Args:
-            user (User): user object record for which we are retrieving the entitlement.
-            course_uuid (UUID): identified of the course for which we are retrieving the learner's entitlement.
-        """
-        return CourseEntitlement.objects.filter(user=user, course_uuid=course_uuid).latest('created')
+        entitlement = CourseEntitlement.objects.get_or_create(user=user, course_uuid=course_uuid, mode=mode)
+        CourseEntitlementSupportDetail.objects.create(
+            entitlement=entitlement, reason=reason, comments=comments, support_user=support_user
+        )
+        return Response(
+            status=status.HTTP_201_CREATED,
+            data=SupportCourseEntitlementSerializer(instance=entitlement).data
+        )
 
     @staticmethod
     def unexpire_entitlement(entitlement):
@@ -138,7 +128,6 @@ class EntitlementSupportView(viewsets.ModelViewSet):
         """
         unenrolled_run = entitlement.enrollment_course_run.course
         entitlement.expired_at = None
-        entitlement.enrollment_course_run.deactivate()
+        entitlement.enrollment_course_run.unenroll(skip_refund=True)
         entitlement.enrollment_course_run = None
-        entitlement.save()
         return unenrolled_run

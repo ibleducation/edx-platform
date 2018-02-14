@@ -302,6 +302,17 @@ class CourseEntitlement(TimeStampedModel):
             enrollment_course_run=None
         ).select_related('user').select_related('enrollment_course_run')
 
+    @classmethod
+    def get_most_recent_entitlement(cls, user, course_uuid):
+        """
+        Returns the most recently created entitlement for the given user in the given course.
+
+        Args:
+            user (User): user object record for which we are retrieving the entitlement.
+            course_uuid (UUID): identified of the course for which we are retrieving the learner's entitlement.
+        """
+        return cls.objects.filter(user=user, course_uuid=course_uuid).latest('created')
+
 
 class CourseEntitlementSupportDetail(TimeStampedModel):
     """
