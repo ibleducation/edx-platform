@@ -12,7 +12,7 @@ from django.core.urlresolvers import NoReverseMatch, reverse
 from django.dispatch import Signal
 from django.utils.http import cookie_date
 
-from lms.djangoapps.completion.utils import retrieve_last_block_completed_url
+from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_block_completed_url
 from student.models import CourseEnrollment
 
 CREATE_LOGON_COOKIE = Signal(providing_args=['user', 'response'])

@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test import RequestFactory
 
-from lms.djangoapps.completion.utils import retrieve_last_block_completed_url
+from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_block_completed_url
 from student.cookies import get_user_info_cookie_data
 from student.models import CourseEnrollment
 from student.tests.factories import UserFactory
