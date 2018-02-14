@@ -60,7 +60,7 @@ class SupportCourseEntitlementSerializer(CourseEntitlementSerializer):
         """
         Returns a serialized set of all support interactions with the course entitlement
         """
-        qset = CourseEntitlementSupportDetail.objects.filter(entitlement=model)
+        qset = CourseEntitlementSupportDetail.objects.filter(entitlement=model).order_by('-created')
         return CourseEntitlementSupportDetailSerializer(qset, many=True).data
 
     class Meta:

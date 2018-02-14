@@ -37,7 +37,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
             except:
                 return []
             queryset = queryset.filter(user=user)
-            return super(EntitlementSupportView, self).filter_queryset(queryset).order_by('created')
+            return super(EntitlementSupportView, self).filter_queryset(queryset).order_by('-created')
         else:
             return []
 
