@@ -113,6 +113,29 @@ class AssetIndexPageStudioFrontend(CoursePage):
         url = "/".join([BASE_URL, self.url_path, urllib.quote_plus(unicode(course_key))])
         return url if url[-1] is '/' else url + '/'
 
+    @property
+    def asset_files_names(self):
+        """
+        Get the names of uploaded files.
+        Returns:
+            list: Uploaded files.
+        """
+        import pudb; pudb.set_trace()
+        return self.q(css='.table-responsive tbody tr td:nth-child(2)').text
+
+    @property
+    def asset_files_count(self):
+        """
+        Returns the count of files uploaded.
+        """
+        return len(self.q(css='.table-responsive tr').execute())
+
+    @property
+    def asset_delete_links(self):
+        """Return a list of WebElements for deleting the assets"""
+        css = '.table-responsive tbody tr .fa-trash'
+        return self.q(css=css).execute()
+
     @wait_for_js
     def is_browser_on_page(self):
         return all([
