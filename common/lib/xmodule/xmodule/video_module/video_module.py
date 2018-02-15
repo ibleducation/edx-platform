@@ -712,14 +712,21 @@ class VideoDescriptor(VideoFields, VideoTranscriptsMixin, VideoStudioViewHandler
                 xml.append(ele)
 
         if edxval_api:
+
             external, video_ids = get_video_ids_info(self.edx_video_id, self.youtube_id_1_0, self.html5_sources)
-            if video_ids:
+            if not external:
                 try:
+                    transcript_dir = 'static'
+                    resource_fs.makedirs(transcript_dir, recreate=True)
+                    export_video_kwargs = {
+                        'transcript_dir': transcript_dir,
+                        'resource_fs': resource_fs
+                    }
                     xml.append(
                         edxval_api.export_to_xml(
-                            video_ids,
+                            video_ids[0],
                             unicode(self.runtime.course_id.for_branch(None)),
-                            external=external
+                            **export_video_kwargs
                         )
                     )
                 except edxval_api.ValVideoNotFoundError:
