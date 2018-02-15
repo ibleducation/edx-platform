@@ -48,9 +48,122 @@ from xmodule.modulestore.exceptions import DuplicateCourseError, ItemNotFoundErr
 from xmodule.modulestore.xml_exporter import export_course_to_xml, export_library_to_xml
 from xmodule.modulestore.xml_importer import import_course_from_xml, import_library_from_xml
 
+from celery_utils.persist_on_failure import PersistOnFailureTask
+from xmodule.video_module.transcripts_utils import Transcript
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.exceptions import NotFoundError
+
+from edxval.api import create_video_transcript, is_transcript_available, create_or_update_video_transcript
+from django.core.files.base import ContentFile
+
+import mimetypes
+
 LOGGER = get_task_logger(__name__)
 FILE_READ_CHUNK = 1024  # bytes
 FULL_COURSE_REINDEX_THRESHOLD = 1
+DEFAULT_ALL_COURSES = False
+DEFAULT_FORCE_UPDATE = False
+
+
+def _task_options(routing_key):
+    task_options = {}
+    if getattr(settings, 'HIGH_MEM_QUEUE', None):
+        task_options['routing_key'] = settings.HIGH_MEM_QUEUE
+    if routing_key:
+        task_options['routing_key'] = routing_key
+    return task_options
+
+
+def enqueue_async_migrate_transcripts_tasks(
+        course_ids,
+        all_courses=False,
+        force_update=False,
+        routing_key=None
+):
+    store = modulestore()
+    if all_courses:
+        course_keys = [course.id for course in store.get_course_summaries()]
+    else:
+        course_keys = [CourseKey.from_string(id) for id in course_ids]
+
+    for course_key in course_keys:
+        options = _task_options(routing_key)
+        async_migrate_transcript.apply_async(
+            args=[unicode(course_key)],
+            kwargs={'force_update': force_update},
+            **options
+        )
+
+
+@task(base=PersistOnFailureTask)
+def async_migrate_transcript(*args, **kwargs):
+    course_key = next(iter(args), None)
+    force_update = kwargs['force_update']
+    file_format = None
+    LOGGER.info("Locating videos for Course %s ... ", course_key)
+    store = modulestore()
+    #TODO: search for draft_only also
+    for video in store.get_items(CourseKey.from_string(course_key), qualifiers={'category': 'video'},
+                                 revision=ModuleStoreEnum.RevisionOption.published_only, include_orphans=False):
+        other_lang_transcripts = video.transcripts
+        english_transcript = video.sub
+
+        if english_transcript:
+            transcript_already_present = is_transcript_available(video.edx_video_id, 'en')
+            if transcript_already_present and force_update:
+               migrate_transcript(video, 'en', video.sub, True)
+            elif not transcript_already_present:
+               migrate_transcript(video, 'en', video.sub)
+
+        if any(other_lang_transcripts):
+            for lang, name in other_lang_transcripts.items():
+                transcript_already_present = is_transcript_available(video.edx_video_id, lang)
+                if transcript_already_present and force_update:
+                    migrate_transcript(video, lang, name, True)
+                elif not transcript_already_present:
+                    migrate_transcript(video, lang, name)
+
+
+def migrate_transcript(video, language_code, transcript_name, force_update=False):
+    try:
+        transcript_content = Transcript.asset(video.location, transcript_name, language_code)
+        push_to_s3(video.edx_video_id, language_code, transcript_content, force_update)
+    except NotFoundError:
+        try:
+            transcript_content = Transcript.asset(video.location, None, None, transcript_name)
+            push_to_s3(video.edx_video_id, language_code, transcript_content, force_update)
+        except NotFoundError:
+            LOGGER.error("Could not locate asset for %s language named %s of video %s ",
+                         language_code, transcript_name, video.location)
+
+
+def push_to_s3(edx_video_id, language_code, transcript_content, force_update=False):
+    try:
+        # with transaction.atomic():
+        file_format = None
+        for key, type in dict(Transcript.mime_types).iteritems():
+            if transcript_content.content_type in type:
+                file_format = key
+                break
+        if force_update:
+            transcript_url = create_or_update_video_transcript(
+                edx_video_id, language_code,
+                dict({'file_format': file_format}),
+                ContentFile(transcript_content),
+            )
+            LOGGER.info("Push_to_S3 %s for %s", True if transcript_url else False, edx_video_id)
+        else:
+            created = create_video_transcript(
+                                                edx_video_id, language_code,
+                                                ContentFile(transcript_content),
+                                                metadata={'file_format': file_format},
+                                                )
+            LOGGER.info("Push_to_S3 %s for %s", created, edx_video_id)
+
+
+    except Exception as err:
+        LOGGER.info("Push_failed %s", err.message)
+
 
 
 def clone_instance(instance, field_values):
