@@ -134,7 +134,7 @@ class AssetIndexPageStudioFrontend(CoursePage):
         """
         Checks that the dropzone area is on the page.
         """
-        return self.q(css='.AssetsDropZone__drop-zone').present
+        return self.q(css='.drop-zone').present
 
     #
     # Should we add an id value to the div surrounding the assets filters?
@@ -146,9 +146,21 @@ class AssetIndexPageStudioFrontend(CoursePage):
         Checks that type filter heading and checkboxes are on the page.
         """
         return all([
-            self.q(css='.AssetsFilters__filter-heading').present,
-            self.q(css='.CheckBoxGroup__form-group').present,
+            self.q(css='.filter-heading').present,
+            self.q(css='.filter-set').present,
+            self.q(css='.form-group').present,
         ])
+
+    def number_of_filters(self):
+        return len(self.q(css='.form-check').execute())
+
+    @wait_for_js
+    def correct_filters__in_filter_element(self):
+        """
+        """
+        correct_filters = [u'Audio', u'Code', u'Document', u'Image', u'Other']
+        filters = self.q(css='.form-check').execute()
+        return all([filter.text in correct_filters for filter in filters])
 
     #
     # next two items validate clicking the dropdown and selecting from the dropdown
@@ -191,8 +203,8 @@ class AssetIndexPageStudioFrontend(CoursePage):
         Checks that status alert is hidden on page.
         """
         return all([
-            self.q(css='.StatusAlert__alert').present,
-            not self.q(css='StatusAlert__alert').visible,
+            self.q(css='.alert').present,
+            not self.q(css='.alert').visible,
         ])
 
     @wait_for_js
@@ -200,7 +212,7 @@ class AssetIndexPageStudioFrontend(CoursePage):
         """
         Checks that pagination is on the page.
         """
-        return self.q(css='.Pagination__pagination').present
+        return self.q(css='.pagination').present
 
     ## assuming that we are starting with a page that has elements in it already? (based on exising test setup file)
     @wait_for_js
@@ -208,10 +220,10 @@ class AssetIndexPageStudioFrontend(CoursePage):
         """
         Checks that table is on the page.
         """
-        return self.q(css='table.Table__table-responsive').present
+        return self.q(css='table.table-responsive').present
 
     def return_results_set(self):
         """
         Returns the asset set from the page
         """
-        return self.q(css="table.Table__table-responsive tr").results
+        return self.q(css=".table-responsive tr").results

@@ -76,11 +76,37 @@ class AssetIndexTestStudioFrontend(StudioCourseTest):
         ConfigModelFixture('/config/assets', {'enabled_for_all_courses': True, 'enabled': True}, 'cms').install()
         self.course_fixture.add_asset(['image.jpg', 'textbook.pdf'])
 
-    # DO WE STILL NEED THE SKIP_IF_BROWSER?
-    @skip_if_browser('chrome')  # TODO Need to fix test_page_existance for this for chrome browser
     def test_type_filter_exists(self):
         """
         Make sure type filter is on the page.
         """
         self.asset_page.visit()
         assert self.asset_page.filter_element_on_page() is True
+
+    def test_upload_element_exists(self):
+        """
+        Make sure upload dropzone is on the page.
+        """
+        self.asset_page.visit()
+        assert self.asset_page.is_upload_element_on_page() is True
+
+    def test_sortable_table_element_exists(self):
+        """
+        Make sure sortable table headings are on the page.
+        """
+        self.asset_page.visit()
+        assert self.asset_page.sortable_element_on_page() is True
+
+    def test_status_element_exists(self):
+        """
+        Make sure status alert is on the page but not visible.
+        """
+        self.asset_page.visit()
+        assert self.asset_page.status_alert_element_on_page() is True
+
+    def test_pagination_element_exists(self):
+        """
+        Make sure pagination element is on the page.
+        """
+        self.asset_page.visit()
+        assert self.asset_page.pagination_element_on_page() is True
