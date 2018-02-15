@@ -437,6 +437,7 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         verified_mode.expiration_datetime = datetime(year=1970, month=1, day=9, tzinfo=UTC)
         verified_mode.save()
 
+
 class SupportViewCourseEntitlementsTests(SupportViewTestCase):
     """ Tests for the course entitlement support view."""
 
@@ -450,7 +451,7 @@ class SupportViewCourseEntitlementsTests(SupportViewTestCase):
         CourseEntitlementFactory.create(mode=CourseMode.VERIFIED, user=self.student, course_uuid=self.course_uuid)
 
         self.url = reverse('support:course_entitlement')
-    
+
     @ddt.data('username', 'email')
     def test_get_entitlements(self, search_string_type):
         url = reverse('support:enrollment_list') + '?username_or_email=' + getattr(self.student, search_string_type)
@@ -459,10 +460,9 @@ class SupportViewCourseEntitlementsTests(SupportViewTestCase):
         data = json.loads(response.content)
         self.assertEqual(len(data), 1)
         self.assertDictContainsSubset({
-            'mode': CourseMode.AUDIT,
-            'manual_enrollment': {},
             'user': self.student.username,
-            'course_id': unicode(self.course.id),  # pylint: disable=no-member
-            'is_active': True,
-            'verified_upgrade_deadline': None,
+            'course_uuid': self.course_uuid,
+            'enrollment_course_run': None,
+            'mode': CourseMode.VERIFIED,
+            'support_details': []
         }, data[0])
