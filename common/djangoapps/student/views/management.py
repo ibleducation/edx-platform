@@ -94,6 +94,7 @@ from student.models import (
     UserStanding,
     create_comments_service_user,
 )
+from entitlements.models import CourseEntitlement
 from student.signals import REFUND_ORDER
 from student.tasks import send_activation_email
 from student.text_me_the_app import TextMeTheAppFragmentView
@@ -402,6 +403,12 @@ def change_enrollment(request, check_access=True):
         )
         if redirect_url:
             return HttpResponse(redirect_url)
+
+        if CourseEntitlement.check_for_existing_entitlement_and_enroll(
+            user=user,
+            course_run_key=course_id
+        ) is not None:
+            return HttpResponse(reverse('dashboard'))
 
         # Check that auto enrollment is allowed for this course
         # (= the course is NOT behind a paywall)

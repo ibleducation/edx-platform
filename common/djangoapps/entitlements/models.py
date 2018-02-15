@@ -1,15 +1,17 @@
 import uuid as uuid_tools
 from datetime import timedelta
-from util.date_utils import strftime_localized
 
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.timezone import now
+from model_utils.models import TimeStampedModel
 
 from lms.djangoapps.certificates.models import GeneratedCertificate
-from model_utils.models import TimeStampedModel
+from openedx.core.djangoapps.catalog.utils import get_course_uuid_for_course
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from student.models import CourseEnrollment
+from util.date_utils import strftime_localized
 
 
 class CourseEntitlementPolicy(models.Model):
@@ -301,6 +303,45 @@ class CourseEntitlement(TimeStampedModel):
             expired_at__isnull=False,
             enrollment_course_run=None
         ).select_related('user').select_related('enrollment_course_run')
+
+    @classmethod
+    def check_for_existing_entitlement_and_enroll(cls, user, course_run_key):
+        """
+        Looks at the User's existing entitlements to see if the user already has a Course Entitlement for the
+        course run provided in the course_key.  If the user does have an Entitlement with no run set, the User is
+        enrolled in the mode set in the Entitlement.
+
+        Note: This method assumes that eligibility to enroll in the course has already been checked.
+
+        Arguments:
+            user (User): The user that we are inspecting the entitlements for.
+            course_run_key (CourseKey): The course run Key.
+
+        Returns:
+            CourseEntitlement: The CourseEntitlement that was found and used and None otherwise.
+        """
+        # Check if the User has any Entitlements that are active
+        entitlements = CourseEntitlement.get_active_entitlements_for_user(user)
+        if entitlements:
+            course_uuid_str = get_course_uuid_for_course(course_run_key)
+            # Look for an entitlement for the current uuid
+            if course_uuid_str:
+                course_entitlement = CourseEntitlement.get_entitlement_if_active(
+                    user=user,
+                    course_uuid=uuid_tools.UUID(course_uuid_str)
+                )
+                if course_entitlement:
+                    # The course enroll eligibility should have been checked earlier.
+                    # The user has an active entitlement for the course_uuid we should
+                    # Enroll the user and redirect
+                    enrollment = CourseEnrollment.enroll(
+                        user=user,
+                        course_key=course_run_key,
+                        mode=course_entitlement.mode
+                    )
+                    course_entitlement.set_enrollment(enrollment)
+                    return course_entitlement
+        return None
 
 
 class CourseEntitlementSupportDetail(TimeStampedModel):
