@@ -99,7 +99,7 @@ def _is_valid_social_username(value):
     return '/' not in value
 
 
-def retrieve_last_block_completed_url(username):
+def retrieve_last_block_completed_url_cache(username):
     """
     Completion utility
     From a string 'username' or object User retrieve
@@ -109,16 +109,17 @@ def retrieve_last_block_completed_url(username):
     :return: block_lms_url
 
     """
-    cache_name = "context_processor.resume_block"
-
     if not isinstance(username, User):
         userobj = User.objects.get(username=username)
     else:
         userobj = username
 
+    cache_name = "context_processor.resume_block"
+
     cached_value = get_cache(cache_name)
+
     if not cached_value:
-        resume_block = None
+        resume_block = {'block_url': None}
         try:
             resume_block_key = BlockCompletion.get_last_sitewide_block_completed(userobj).block_key
         except AttributeError:
@@ -136,11 +137,53 @@ def retrieve_last_block_completed_url(username):
             if not lms_base:
                 cached_value.update(resume_block)
                 return
+            if lms_base == 'edx.devstack.lms:18000':
+                lms_base = 'localhost:18000'
 
         resume_block = u"//{lms_base}/courses/{course_key}/jump_to/{location}".format(
             lms_base=lms_base,
             course_key=text_type(item.location.course_key),
             location=text_type(item.location),
         )
-        cached_value.update(resume_block)
-        return resume_block
+        cached_value.update({'block_url': resume_block})
+
+    return cached_value['block_url']
+
+
+def retrieve_last_block_completed_url(username):
+    """
+    Completion utility
+    From a string 'username' or object User retrieve
+    the last course block marked as 'completed' and construct a URL
+
+    :param username: str(username) or obj(User)
+    :return: block_lms_url
+
+    """
+    if not isinstance(username, User):
+        userobj = User.objects.get(username=username)
+    else:
+        userobj = username
+
+    try:
+        resume_block_key = BlockCompletion.get_last_sitewide_block_completed(userobj).block_key
+    except AttributeError:
+        return
+
+    item = modulestore().get_item(resume_block_key, depth=1)
+    lms_base = SiteConfiguration.get_value_for_org(
+        item.location.org,
+        "LMS_BASE",
+        settings.LMS_BASE
+    )
+    if not lms_base:
+        return
+
+    if lms_base == 'edx.devstack.lms:18000':
+        lms_base = 'localhost:18000'
+
+    return u"//{lms_base}/courses/{course_key}/jump_to/{location}".format(
+        lms_base=lms_base,
+        course_key=text_type(item.location.course_key),
+        location=text_type(item.location),
+    )
