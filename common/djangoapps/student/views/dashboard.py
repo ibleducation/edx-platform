@@ -6,6 +6,7 @@ import datetime
 import logging
 from collections import defaultdict
 
+from completion.utilities import get_key_to_last_completed_course_block, UnavailableCompletionData
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -50,7 +51,6 @@ from student.models import (
 )
 from util.milestones_helpers import get_pre_requisite_courses_not_completed
 from xmodule.modulestore.django import modulestore
-from lms.djangoapps.completion.utilities import get_url_to_last_completed_block, UnavailableCompletionData
 
 log = logging.getLogger("edx.student")
 
@@ -459,7 +459,8 @@ def _get_urls_for_resume_buttons(user, enrollments):
     # Throws UnavailableCompletionData
     resume_button_urls = []
     for enrollment in enrollments:
-        urlToBlock = get_url_to_last_completed_block(user, enrollment)
+        block_key = get_key_to_last_completed_course_block(user, enrollment)
+        urlToBlock = reverse('jump_to', kwargs={'course_id': enrollment.course_id, 'location': block_key})
         resume_button_urls.append(urlToBlock)
     return resume_button_urls
 
