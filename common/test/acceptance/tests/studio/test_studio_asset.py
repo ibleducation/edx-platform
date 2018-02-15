@@ -27,9 +27,6 @@ class AssetIndexTest(StudioCourseTest):
         """
         Populate the children of the test course fixture.
         """
-        import pdb; pdb.set_trace()
-        ConfigModelFixture('/config/assets', {'enabled': True}, 'cms').install()
-        import pdb; pdb.set_trace()
         self.course_fixture.add_asset(['image.jpg', 'textbook.pdf'])
 
     @skip_if_browser('chrome')  # TODO Need to fix test_page_existance for this for chrome browser
@@ -82,6 +79,22 @@ class AssetIndexTestStudioFrontend(StudioCourseTest):
         """
         self.asset_page.visit()
         assert self.asset_page.filter_element_on_page() is True
+
+    def test_correct_filters_exist(self):
+        """
+        Make sure type filter is on the page.
+        """
+        self.asset_page.visit()
+        assert self.asset_page.correct_filters__in_filter_element() is True
+
+    def test_correct_filters_exist(self):
+        """
+        Make sure type filter is on the page.
+        """
+        self.asset_page.visit()
+        assert self.asset_page.correct_filters__in_filter_element() is True
+
+
 
     def test_upload_element_exists(self):
         """
