@@ -12,6 +12,7 @@ from django.core.urlresolvers import NoReverseMatch, reverse
 from django.dispatch import Signal
 from django.utils.http import cookie_date
 
+from openedx.core.djangoapps.request_cache import get_cache
 from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_block_completed_url
 from student.models import CourseEnrollment
 
@@ -59,6 +60,8 @@ def set_logged_in_cookies(request, response, user):
         "username": "test-user",
         "header_urls": {
             "account_settings": "https://example.com/account/settings",
+            "resume_block":
+                "https://example.com//courses/org.0/course_0/Run_0/jump_to/i4x://org.0/course_0/vertical/vertical_4"
             "learner_profile": "https://example.com/u/test-user",
             "logout": "https://example.com/logout"
         }

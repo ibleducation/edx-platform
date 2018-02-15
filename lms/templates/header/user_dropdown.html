@@ -39,7 +39,7 @@ from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_block_
             <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${resume_block}" role="menuitem">${_("Resume your last course")}</a></div>
         % endif
         <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${reverse('dashboard')}" role="menuitem">${_("Dashboard")}</a></div>
-        <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${reverse('profile')}" role="menuitem">${_("Profile")}</a></div>
+        <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${reverse('learner_profile', kwargs={'username': username})}" role="menuitem">${_("Profile")}</a></div>
         <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${reverse('account_settings')}" role="menuitem">${_("Account")}</a></div>
         <div class="mobile-nav-item dropdown-item dropdown-nav-item"><a href="${reverse('logout')}" role="menuitem">${_("Sign Out")}</a></div>
     </div>

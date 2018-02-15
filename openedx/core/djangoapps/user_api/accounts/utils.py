@@ -12,6 +12,8 @@ from six import text_type
 from lms.djangoapps.completion.models import BlockCompletion
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
 from xmodule.modulestore.django import modulestore
+from openedx.core.djangoapps.user_api.errors import UserAPIInternalError, UserNotFound
+from openedx.core.djangoapps.request_cache import get_cache
 
 
 def validate_social_link(platform_name, new_social_link):
@@ -107,29 +109,38 @@ def retrieve_last_block_completed_url(username):
     :return: block_lms_url
 
     """
+    cache_name = "context_processor.resume_block"
+
     if not isinstance(username, User):
         userobj = User.objects.get(username=username)
     else:
         userobj = username
 
-    try:
-        resume_block_key = BlockCompletion.get_last_sitewide_block_completed(userobj).block_key
-    except AttributeError:
-        print 'NO BLOCK'
-        return
+    cached_value = get_cache(cache_name)
+    if not cached_value:
+        resume_block = None
+        try:
+            resume_block_key = BlockCompletion.get_last_sitewide_block_completed(userobj).block_key
+        except AttributeError:
+            return
+        except (UserNotFound, UserAPIInternalError):
+            cached_value.update(resume_block)
+            return
+        else:
+            item = modulestore().get_item(resume_block_key, depth=1)
+            lms_base = SiteConfiguration.get_value_for_org(
+                item.location.org,
+                "LMS_BASE",
+                settings.LMS_BASE
+            )
+            if not lms_base:
+                cached_value.update(resume_block)
+                return
 
-    item = modulestore().get_item(resume_block_key, depth=1)
-    lms_base = SiteConfiguration.get_value_for_org(
-        item.location.org,
-        "LMS_BASE",
-        settings.LMS_BASE
-    )
-    if not lms_base:
-        print 'HERE'
-        return
-
-    return u"//{lms_base}/courses/{course_key}/jump_to/{location}".format(
-        lms_base=lms_base,
-        course_key=text_type(item.location.course_key),
-        location=text_type(item.location),
-    )
+        resume_block = u"//{lms_base}/courses/{course_key}/jump_to/{location}".format(
+            lms_base=lms_base,
+            course_key=text_type(item.location.course_key),
+            location=text_type(item.location),
+        )
+        cached_value.update(resume_block)
+        return resume_block
