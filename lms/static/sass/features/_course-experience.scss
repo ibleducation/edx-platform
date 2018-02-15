@@ -376,6 +376,12 @@
             }
 
             a.outline-item:hover {
+              text-decoration: none;
+
+              .vertical-details {
+                text-decoration: underline;
+              }
+
               .complete-checkmark {
                 text-decoration: none;
               }
