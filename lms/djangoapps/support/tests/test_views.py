@@ -7,6 +7,7 @@ import itertools
 import json
 import re
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 import ddt
 import pytest
@@ -19,6 +20,7 @@ from pytz import UTC
 from common.test.utils import disable_signal
 from course_modes.models import CourseMode
 from course_modes.tests.factories import CourseModeFactory
+from entitlements.tests.factories import CourseEntitlementFactory
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from student.models import ENROLLED_TO_ENROLLED, CourseEnrollment, ManualEnrollmentAudit
 from student.roles import GlobalStaff, SupportStaffRole
@@ -107,7 +109,8 @@ class SupportViewAccessTests(SupportViewTestCase):
             'support:enrollment',
             'support:enrollment_list',
             'support:manage_user',
-            'support:manage_user_detail'
+            'support:manage_user_detail',
+            'support:course_entitlement'
         ), (
             (GlobalStaff, True),
             (SupportStaffRole, True),
@@ -135,7 +138,8 @@ class SupportViewAccessTests(SupportViewTestCase):
         "support:enrollment",
         "support:enrollment_list",
         "support:manage_user",
-        "support:manage_user_detail"
+        "support:manage_user_detail",
+        "support:course_entitlement"
     )
     def test_require_login(self, url_name):
         url = reverse(url_name)
@@ -432,3 +436,33 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         )
         verified_mode.expiration_datetime = datetime(year=1970, month=1, day=9, tzinfo=UTC)
         verified_mode.save()
+
+class SupportViewCourseEntitlementsTests(SupportViewTestCase):
+    """ Tests for the course entitlement support view."""
+
+    def setUp(self):
+        super(SupportViewCourseEntitlementsTests, self).setUp()
+        SupportStaffRole().add_users(self.user)
+
+        self.student = UserFactory.create(username='student', email='test@example.com', password='test')
+        self.course_uuid = uuid4()
+
+        CourseEntitlementFactory.create(mode=CourseMode.VERIFIED, user=self.student, course_uuid=self.course_uuid)
+
+        self.url = reverse('support:course_entitlement')
+    
+    @ddt.data('username', 'email')
+    def test_get_entitlements(self, search_string_type):
+        url = reverse('support:enrollment_list') + '?username_or_email=' + getattr(self.student, search_string_type)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(len(data), 1)
+        self.assertDictContainsSubset({
+            'mode': CourseMode.AUDIT,
+            'manual_enrollment': {},
+            'user': self.student.username,
+            'course_id': unicode(self.course.id),  # pylint: disable=no-member
+            'is_active': True,
+            'verified_upgrade_deadline': None,
+        }, data[0])
