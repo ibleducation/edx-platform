@@ -16,7 +16,7 @@ from entitlements.models import CourseEntitlement, CourseEntitlementSupportDetai
 from lms.djangoapps.support.decorators import require_support_permission
 from openedx.core.djangoapps.cors_csrf.authentication import SessionAuthenticationCrossDomainCsrf
 
-REQUIRED_CREATION_FIELDS = ['username_or_email', 'course_uuid', 'reason', 'mode']
+REQUIRED_CREATION_FIELDS = ['course_uuid', 'reason', 'mode']
 
 
 class EntitlementSupportView(viewsets.ModelViewSet):
@@ -28,24 +28,21 @@ class EntitlementSupportView(viewsets.ModelViewSet):
     queryset = CourseEntitlement.objects.all()
     serializer_class = SupportCourseEntitlementSerializer
 
-    def filter_queryset(self, queryset):
-        username_or_email = self.request.GET.get('username_or_email', None)
-        if username_or_email:
-            try:
-                user = User.objects.get(Q(username=username_or_email) | Q(email=username_or_email))
-            except User.DoesNotExist:
-                return []
-            queryset = queryset.filter(user=user)
-            return super(EntitlementSupportView, self).filter_queryset(queryset).order_by('-created')
-        else:
-            return []
+    @method_decorator(require_support_permission)
+    def list(self, request, username_or_email):
+        """
+        Returns a list of course entitlements for the given user, along with details of any
+        support team interactions with each of the course entitlements.
+        """
+        try:
+            user = User.objects.get(Q(username=username_or_email) | Q(email=username_or_email))
+        except User.DoesNotExist:
+            return Response([])
+
+        return Response(self.serializer_class(self.queryset.filter(user=user), many=True).data)
 
     @method_decorator(require_support_permission)
-    def list(self, request):
-        return super(EntitlementSupportView, self).list(request)
-
-    @method_decorator(require_support_permission)
-    def update(self, request):
+    def update(self, request, username_or_email):
         """ Allows support staff to update an existing course entitlement. """
         support_user = request.user
         entitlement_uuid = request.data.get('entitlement_uuid')
@@ -90,7 +87,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
                 u'Failed to reinstate entitlement {entitlement}'.format(entitlement=entitlement))
 
     @method_decorator(require_support_permission)
-    def create(self, request, *args, **kwargs):
+    def create(self, request, username_or_email):
         """ Allows support staff to grant a user a new entitlement for a course. """
         support_user = request.user
         comments = request.data.get('comments', None)
@@ -108,7 +105,6 @@ class EntitlementSupportView(viewsets.ModelViewSet):
                 )
             )
 
-        username_or_email = creation_fields['username_or_email']
         try:
             user = User.objects.get(Q(username=username_or_email) | Q(email=username_or_email))
         except User.DoesNotExist:
@@ -118,7 +114,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
                 )
             )
 
-        entitlement, _ = CourseEntitlement.objects.create(
+        entitlement = CourseEntitlement.objects.create(
             user=user, course_uuid=creation_fields['course_uuid'], mode=creation_fields['mode']
         )
         CourseEntitlementSupportDetail.objects.create(

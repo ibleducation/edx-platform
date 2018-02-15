@@ -438,6 +438,7 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         verified_mode.save()
 
 
+@ddt.ddt
 class SupportViewCourseEntitlementsTests(SupportViewTestCase):
     """ Tests for the course entitlement support view."""
 
@@ -454,7 +455,8 @@ class SupportViewCourseEntitlementsTests(SupportViewTestCase):
 
     @ddt.data('username', 'email')
     def test_get_entitlements(self, search_string_type):
-        url = reverse('support:enrollment_list') + '?username_or_email=' + getattr(self.student, search_string_type)
+        from pdb import set_trace; set_trace()
+        url = self.url + '?username_or_email=' + getattr(self.student, search_string_type)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
@@ -466,3 +468,4 @@ class SupportViewCourseEntitlementsTests(SupportViewTestCase):
             'mode': CourseMode.VERIFIED,
             'support_details': []
         }, data[0])
+        

@@ -21,7 +21,11 @@ urlpatterns = [
     url(r'^$', index, name="index"),
     url(r'^certificates/?$', CertificatesSupportView.as_view(), name="certificates"),
     url(r'^refund/?$', RefundSupportView.as_view(), name="refund"),
-    url(r'^course_entitlement/?$', COURSE_ENTITLEMENTS_VIEW, name="course_entitlement"),
+    url(
+        r'^course_entitlement/(?P<username_or_email>[\w.@+-]+)?$',
+        COURSE_ENTITLEMENTS_VIEW,
+        name="course_entitlement"
+    ),
     url(r'^enrollment/?$', EnrollmentSupportView.as_view(), name="enrollment"),
     url(r'^contact_us/?$', ContactUsView.as_view(), name="contact_us"),
     url(
