@@ -12,6 +12,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from student.tests.factories import CourseEnrollmentFactory, UserFactory
+from ..utilities import get_url_to_last_completed_block, UnavailableCompletionData
 
 
 @skip_unless_lms
@@ -249,3 +250,18 @@ class BatchCompletionMethodTests(CompletionWaffleTestMixin, TestCase):
 
     def test_get_latest_completed_none_exist(self):
         self.assertIsNone(models.BlockCompletion.get_latest_block_completed(self.other_user, self.other_course_key))
+
+    def test_can_get_url_to_last_completed_course_block(self):
+        enrollment = CourseEnrollmentFactory.create(
+            user=self.user,
+            course_id=self.course_key
+        )
+        self.assertEqual(
+            get_url_to_last_completed_block(self.user, enrollment),
+            u'/courses/edX/MOOC101/2049_T2/jump_to/i4x://edX/MOOC101/video/2'
+        )
+
+    def test_getting_last_completed_course_block_in_untouched_enrollment_throws(self):
+        enrollment = CourseEnrollmentFactory.create()
+        with self.assertRaises(UnavailableCompletionData):
+            get_url_to_last_completed_block(self.user, enrollment),
