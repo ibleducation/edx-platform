@@ -493,14 +493,16 @@ class SupportViewCourseEntitlementsTests(SupportViewTestCase):
         }, data['support_details'][0])
 
     def test_create_entitlement(self):
-        expired_entitlement = CourseEntitlementFactory.create(
+        CourseEntitlementFactory.create(
             mode=CourseMode.VERIFIED, user=self.student, course_uuid=self.course_uuid, expired_at=datetime.now()
         )
         url = self.url + self.student.username
-        response = self.client.post(url, data=json.dumps({
-            'course_uuid': unicode(self.course_uuid),
-            'reason': 'LEARNER_NEW',
-            'mode': CourseMode.VERIFIED
+        response = self.client.post(
+            url,
+            data=json.dumps({
+                'course_uuid': unicode(self.course_uuid),
+                'reason': 'LEARNER_NEW',
+                'mode': CourseMode.VERIFIED
             }),
             content_type='application/json',
         )
