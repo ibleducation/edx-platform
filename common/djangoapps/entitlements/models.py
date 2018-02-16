@@ -12,6 +12,7 @@ from openedx.core.djangoapps.catalog.utils import get_course_uuid_for_course
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from student.models import CourseEnrollment
 from util.date_utils import strftime_localized
+from utils import is_course_run_entitlement_fullfillable
 
 
 class CourseEntitlementPolicy(models.Model):
@@ -305,6 +306,43 @@ class CourseEntitlement(TimeStampedModel):
         ).select_related('user').select_related('enrollment_course_run')
 
     @classmethod
+    def does_user_have_active_entitlements(cls, user):
+        """
+        Checks whether or not a user has any active entitlements
+        """
+        count = cls.objects.count(
+            user=user
+        ).exclude(
+            expired_at__isnull=False,
+            enrollment_course_run=None
+        ).select_related('user').select_related('enrollment_course_run')
+        return count > 0
+
+    @classmethod
+    def get_most_recent_fullfillable_entitlement(cls, user, course_uuid):
+        """
+        Returns the most recent Course Entitlement for a Course that a user can use
+
+        Arguments:
+            user (User): The user we are looking at the entitlements of.
+            course_uuid: The Course UUID of the course we are looking for.
+
+        Returns
+            CourseEntitlement: A course Entitlement that a user can enroll in must not be expired
+                and not have a course run already assigned to it.
+        """
+        try:
+            return cls.objects.filter(
+                user=user,
+                course_uuid=course_uuid
+            ).exclude(
+                expired_at__isnull=False,
+                enrollment_course_run__isnull=False
+            ).latest('created')
+        except CourseEntitlement.DoesNotExist:
+            return None
+
+    @classmethod
     def check_for_existing_entitlement_and_enroll(cls, user, course_run_key):
         """
         Looks at the User's existing entitlements to see if the user already has a Course Entitlement for the
@@ -321,19 +359,22 @@ class CourseEntitlement(TimeStampedModel):
             bool: True if the User is enrolled in the course run, False otherwise.
         """
         # Check if the User has any Entitlements that are active
-        entitlements = CourseEntitlement.get_active_entitlements_for_user(user)
-        if entitlements:
+        if cls.does_user_have_active_entitlements(user):
             course_uuid = get_course_uuid_for_course(course_run_key)
-            # Look for an entitlement for the current uuid
             if course_uuid:
-                course_entitlement = CourseEntitlement.get_entitlement_if_active(
+                # Look for an entitlement for the current uuid
+                course_entitlement = cls.get_most_recent_fullfillable_entitlement(
                     user=user,
                     course_uuid=course_uuid
                 )
                 if course_entitlement:
-                    # The course enroll eligibility should have been checked earlier.
-                    # The user has an active entitlement for the course_uuid we should
-                    # Enroll the user and redirect
+                    # Verify that the enrollment can be enrolled in
+                    if not is_course_run_entitlement_fullfillable(
+                            course_run_key=course_run_key,
+                            entitlement=course_entitlement
+                    ):
+                        return False
+
                     enrollment = CourseEnrollment.enroll(
                         user=user,
                         course_key=course_run_key,
@@ -342,7 +383,6 @@ class CourseEntitlement(TimeStampedModel):
                     course_entitlement.set_enrollment(enrollment)
                     return True
         return False
-
 
 class CourseEntitlementSupportDetail(TimeStampedModel):
     """

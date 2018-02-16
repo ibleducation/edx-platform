@@ -118,7 +118,7 @@ class BasketsView(APIView):
         if CourseEntitlement.check_for_existing_entitlement_and_enroll(user=user, course_run_key=course_key):
             return JsonResponse(
                 {
-                    'redirect_destination': reverse('dashboard'),
+                    'redirect_destination': reverse('courseware', args=[unicode(course_id)]),
                 },
             )
 
