@@ -136,7 +136,6 @@ class TestCourseHomePage(CourseHomePageTestCase):
         remove_course_updates(self.user, self.course)
         super(TestCourseHomePage, self).tearDown()
 
-    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=True)
     def test_welcome_message_when_unified(self):
         # Create a welcome message
         create_course_update(self.course, self.user, TEST_WELCOME_MESSAGE)
@@ -145,7 +144,6 @@ class TestCourseHomePage(CourseHomePageTestCase):
         response = self.client.get(url)
         self.assertContains(response, TEST_WELCOME_MESSAGE, status_code=200)
 
-    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=False)
     def test_welcome_message_when_not_unified(self):
         # Create a welcome message
         create_course_update(self.course, self.user, TEST_WELCOME_MESSAGE)
@@ -154,7 +152,6 @@ class TestCourseHomePage(CourseHomePageTestCase):
         response = self.client.get(url)
         self.assertNotContains(response, TEST_WELCOME_MESSAGE, status_code=200)
 
-    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=True)
     def test_updates_tool_visibility(self):
         """
         Verify that the updates course tool is visible only when the course
@@ -219,7 +216,6 @@ class TestCourseHomePageAccess(CourseHomePageTestCase):
         remove_course_updates(self.staff_user, self.course)
         super(TestCourseHomePageAccess, self).tearDown()
 
-    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=True)
     @override_waffle_flag(SHOW_REVIEWS_TOOL_FLAG, active=True)
     @ddt.data(
         [CourseUserType.ANONYMOUS, 'To see course content'],
@@ -254,7 +250,6 @@ class TestCourseHomePageAccess(CourseHomePageTestCase):
         if expected_message:
             self.assertContains(response, expected_message)
 
-    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=False)
     @override_waffle_flag(SHOW_REVIEWS_TOOL_FLAG, active=True)
     @ddt.data(
         [CourseUserType.ANONYMOUS, 'To see course content'],
@@ -355,7 +350,6 @@ class TestCourseHomePageAccess(CourseHomePageTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
-    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=True)
     @override_waffle_flag(COURSE_PRE_START_ACCESS_FLAG, active=True)
     def test_course_messaging(self):
         """
@@ -398,7 +392,6 @@ class TestCourseHomePageAccess(CourseHomePageTestCase):
         self.assertContains(response, TEST_COURSE_HOME_MESSAGE)
         self.assertContains(response, TEST_COURSE_HOME_MESSAGE_PRE_START)
 
-    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=True)
     @override_waffle_flag(COURSE_PRE_START_ACCESS_FLAG, active=True)
     @override_waffle_flag(ENABLE_COURSE_GOALS, active=True)
     def test_course_goals(self):
@@ -442,7 +435,6 @@ class TestCourseHomePageAccess(CourseHomePageTestCase):
         response = self.client.get(course_home_url(audit_only_course))
         self.assertNotContains(response, TEST_COURSE_GOAL_OPTIONS)
 
-    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=True)
     @override_waffle_flag(COURSE_PRE_START_ACCESS_FLAG, active=True)
     @override_waffle_flag(ENABLE_COURSE_GOALS, active=True)
     def test_course_goal_updates(self):
