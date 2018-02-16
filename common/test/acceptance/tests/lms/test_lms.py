@@ -601,7 +601,6 @@ class HighLevelTabTest(UniqueCourseTest):
         self.course_info['number'] = self.unique_id[0:6]
 
         self.course_home_page = CourseHomePage(self.browser, self.course_id)
-        self.course_info_page = CourseInfoPage(self.browser, self.course_id)
         self.progress_page = ProgressPage(self.browser, self.course_id)
         self.course_home_page = CourseHomePage(self.browser, self.course_id)
         self.courseware_page = CoursewarePage(self.browser, self.course_id)
@@ -639,23 +638,6 @@ class HighLevelTabTest(UniqueCourseTest):
 
         # Auto-auth register for the course
         AutoAuthPage(self.browser, course_id=self.course_id).visit()
-
-    def test_course_info(self):
-        """
-        Navigate to the course info page.
-        """
-
-        # Navigate to the course info page from the progress page
-        self.progress_page.visit()
-        self.tab_nav.go_to_tab('Home')
-
-        # Expect just one update
-        self.assertEqual(self.course_info_page.num_updates, 1)
-
-        # Expect a link to the demo handout pdf
-        handout_links = self.course_info_page.handout_links
-        self.assertEqual(len(handout_links), 1)
-        self.assertIn('demoPDF.pdf', handout_links[0])
 
     def test_progress(self):
         """
