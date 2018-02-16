@@ -117,7 +117,7 @@ source, template_path = Loader(engine).load_template_source(path)
             with open(messages_path) as inputfile:
                 messages = inputfile.read()
 
-            localeData_path = "{base}/studio-frontend/dist/i18n/locale_data/{locale}.json".format(
+            localeData_path = "{base}/studio-frontend/dist/i18n/locale_data/{locale}.js".format(
                 base=settings.STATIC_ROOT_BASE,
                 locale=locale.split('-')[0]
             )
