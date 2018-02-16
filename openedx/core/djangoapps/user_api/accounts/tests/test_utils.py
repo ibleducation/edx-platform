@@ -63,18 +63,10 @@ class UserAccountSettingsTest(TestCase):
         self.assertEqual(formatted_link_expected, format_social_link(platform_name, link_input))
 
 
-"""
-Test utils
-
-"""
-
-
-
 class CompletionUtilsTestCase(SharedModuleStoreTestCase, CompletionWaffleTestMixin, TestCase):
     """
     Test completion utility functions
     """
-
     @classmethod
     def setUpClass(cls):
         """
