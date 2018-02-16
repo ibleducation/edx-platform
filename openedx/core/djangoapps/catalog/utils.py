@@ -2,6 +2,7 @@
 import copy
 import datetime
 import logging
+import uuid
 
 import pycountry
 from django.conf import settings
@@ -289,14 +290,14 @@ def get_course_runs_for_course(course_uuid):
 
 def get_course_uuid_for_course(course_run_key):
     """
-    Retrieve the Course UUID for a fiven course key
+    Retrieve the Course UUID for a given course key
 
     Arguments:
         course_run_key (CourseKey): A Key for a Course run that will be pulled apart to get just the information
         required for a Course (e.g. org+course)
 
     Returns:
-        string: Course UUID in a String or None if it was not retrieved.
+        UUID: Course UUID and None if it was not retrieved.
     """
     catalog_integration = CatalogIntegration.current()
 
@@ -344,7 +345,9 @@ def get_course_uuid_for_course(course_run_key):
                 long_term_cache=True,
                 many=False,
             )
-            return data.get('uuid', None)
+            uuid_str = data.get('uuid', None)
+            if uuid_str:
+                return uuid.UUID(uuid_str)
     return None
 
 

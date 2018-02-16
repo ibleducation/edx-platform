@@ -115,10 +115,7 @@ class BasketsView(APIView):
         audit_mode = CourseMode.mode_for_course(course_key, CourseMode.AUDIT)
 
         # Check to see if the User has an entitlement and enroll them if they have one for this course
-        if CourseEntitlement.check_for_existing_entitlement_and_enroll(
-                user=user,
-                course_run_key=course_key
-        ) is not None:
+        if CourseEntitlement.check_for_existing_entitlement_and_enroll(user=user, course_run_key=course_key):
             return JsonResponse(
                 {
                     'redirect_destination': reverse('dashboard'),

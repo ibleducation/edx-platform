@@ -318,17 +318,17 @@ class CourseEntitlement(TimeStampedModel):
             course_run_key (CourseKey): The course run Key.
 
         Returns:
-            CourseEntitlement: The CourseEntitlement that was found and used and None otherwise.
+            bool: True if the User is enrolled in the course run, False otherwise.
         """
         # Check if the User has any Entitlements that are active
         entitlements = CourseEntitlement.get_active_entitlements_for_user(user)
         if entitlements:
-            course_uuid_str = get_course_uuid_for_course(course_run_key)
+            course_uuid = get_course_uuid_for_course(course_run_key)
             # Look for an entitlement for the current uuid
-            if course_uuid_str:
+            if course_uuid:
                 course_entitlement = CourseEntitlement.get_entitlement_if_active(
                     user=user,
-                    course_uuid=uuid_tools.UUID(course_uuid_str)
+                    course_uuid=course_uuid
                 )
                 if course_entitlement:
                     # The course enroll eligibility should have been checked earlier.
@@ -340,8 +340,8 @@ class CourseEntitlement(TimeStampedModel):
                         mode=course_entitlement.mode
                     )
                     course_entitlement.set_enrollment(enrollment)
-                    return course_entitlement
-        return None
+                    return True
+        return False
 
 
 class CourseEntitlementSupportDetail(TimeStampedModel):
