@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 from django.db import IntegrityError, transaction
@@ -7,7 +6,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from edx_rest_framework_extensions.authentication import JwtAuthentication
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
-from pytz import UTC
 from rest_framework import permissions, viewsets, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.response import Response

@@ -6,6 +6,7 @@ from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.timezone import now
 from model_utils.models import TimeStampedModel
+from django.db import IntegrityError, transaction
 
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from openedx.core.djangoapps.catalog.utils import get_course_uuid_for_course
@@ -319,31 +320,7 @@ class CourseEntitlement(TimeStampedModel):
         return count > 0
 
     @classmethod
-    def get_most_recent_fullfillable_entitlement(cls, user, course_uuid):
-        """
-        Returns the most recent Course Entitlement for a Course that a user can use
-
-        Arguments:
-            user (User): The user we are looking at the entitlements of.
-            course_uuid: The Course UUID of the course we are looking for.
-
-        Returns
-            CourseEntitlement: A course Entitlement that a user can enroll in must not be expired
-                and not have a course run already assigned to it.
-        """
-        try:
-            return cls.objects.filter(
-                user=user,
-                course_uuid=course_uuid
-            ).exclude(
-                expired_at__isnull=False,
-                enrollment_course_run__isnull=False
-            ).latest('created')
-        except CourseEntitlement.DoesNotExist:
-            return None
-
-    @classmethod
-    def check_for_existing_entitlement_and_enroll(cls, user, course_run_key):
+    def get_fullfillable_entitlement_for_user(cls, user, course_run_key):
         """
         Looks at the User's existing entitlements to see if the user already has a Course Entitlement for the
         course run provided in the course_key.  If the user does have an Entitlement with no run set, the User is
@@ -356,33 +333,49 @@ class CourseEntitlement(TimeStampedModel):
             course_run_key (CourseKey): The course run Key.
 
         Returns:
-            bool: True if the User is enrolled in the course run, False otherwise.
+            CourseEntitlement: The most recent fullfillale CourseEntitlement, None otherwise.
         """
         # Check if the User has any Entitlements that are active
         if cls.does_user_have_active_entitlements(user):
             course_uuid = get_course_uuid_for_course(course_run_key)
             if course_uuid:
                 # Look for an entitlement for the current uuid
-                course_entitlement = cls.get_most_recent_fullfillable_entitlement(
-                    user=user,
-                    course_uuid=course_uuid
-                )
-                if course_entitlement:
-                    # Verify that the enrollment can be enrolled in
-                    if not is_course_run_entitlement_fullfillable(
-                            course_run_key=course_run_key,
-                            entitlement=course_entitlement
-                    ):
-                        return False
-
-                    enrollment = CourseEnrollment.enroll(
+                try:
+                    course_entitlement = cls.objects.filter(
                         user=user,
-                        course_key=course_run_key,
-                        mode=course_entitlement.mode
-                    )
-                    course_entitlement.set_enrollment(enrollment)
-                    return True
-        return False
+                        course_uuid=course_uuid
+                    ).exclude(
+                        expired_at__isnull=False,
+                        enrollment_course_run__isnull=False
+                    ).latest('created')
+                except CourseEntitlement.DoesNotExist:
+                    return None
+
+                # Verify that the enrollment can be enrolled in
+                if not is_course_run_entitlement_fullfillable(
+                        course_run_key=course_run_key,
+                        entitlement=course_entitlement
+                ):
+                    return None
+                return course_entitlement
+        return None
+
+    @classmethod
+    def check_for_existing_entitlement_and_enroll(cls, user, course_run_key):
+        entitlement = cls.get_fullfillable_entitlement_for_user(user, course_run_key)
+        if entitlement:
+            cls.enroll_user_in_course(user, entitlement, course_run_key)
+
+    @classmethod
+    @transaction.atomic
+    def enroll_user_in_course(cls, user, entitlement, course_run_key):
+        enrollment = CourseEnrollment.enroll(
+            user=user,
+            course_key=course_run_key,
+            mode=entitlement.mode
+        )
+        entitlement.set_enrollment(enrollment)
+
 
 class CourseEntitlementSupportDetail(TimeStampedModel):
     """
