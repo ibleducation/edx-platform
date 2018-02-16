@@ -207,7 +207,10 @@ class SurveyViewsTests(LoginEnrollmentTestCase, SharedModuleStoreTestCase, XssTe
         )
         self.assertRedirects(
             resp,
-            reverse('openedx.course_experience.course_home', kwargs={'course_id': unicode(self.course_with_bogus_survey.id)})
+            reverse(
+                'openedx.course_experience.course_home',
+                kwargs={'course_id': unicode(self.course_with_bogus_survey.id)}
+            )
         )
 
     def test_visiting_survey_with_no_course_survey(self):
@@ -223,7 +226,10 @@ class SurveyViewsTests(LoginEnrollmentTestCase, SharedModuleStoreTestCase, XssTe
         )
         self.assertRedirects(
             resp,
-            reverse('openedx.course_experience.course_home', kwargs={'course_id': unicode(self.course_without_survey.id)})
+            reverse(
+                'openedx.course_experience.course_home',
+                kwargs={'course_id': unicode(self.course_without_survey.id)}
+            )
         )
 
     def test_survey_xss(self):

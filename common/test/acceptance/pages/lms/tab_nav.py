@@ -14,7 +14,8 @@ class TabNavPage(PageObject):
     url = None
 
     def is_browser_on_page(self):
-        return self.q(css='ol.course-tabs').present
+        return (self.q(css='ol.course-tabs').present or
+                self.q(css='ul.navbar-nav').present)
 
     def go_to_tab(self, tab_name):
         """
