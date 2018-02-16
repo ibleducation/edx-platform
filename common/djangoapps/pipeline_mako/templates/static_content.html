@@ -124,12 +124,11 @@ source, template_path = Loader(engine).load_template_source(path)
             with open(localeData_path) as inputfile:
                 localeData = inputfile.read()
     %>
-    <script type="application/javascript" id="SFE_i18n_messages">
-      ${ messages | n, decode.utf8};
+    <script type="application/json" id="SFE_i18n_messages">
+      ${ messages | n, decode.utf8}
     </script>
     <script type="application/javascript" id="SFE_i18n_localeScript">
-      ${ locale | n, decode.utf8};
-      ${ localeData | n, decode.utf8};
+      ${ localeData | n, decode.utf8}
     </script>
     <script type="application/javascript" id='courseContext'>
         var studioContext = ${ body | n, decode.utf8};
