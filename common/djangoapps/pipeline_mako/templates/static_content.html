@@ -99,6 +99,7 @@ source, template_path = Loader(engine).load_template_source(path)
         body_dict = json.loads(body)
         locale = body_dict['lang']
         ietf_to_transifex = {
+            'en': 'en',
             'fr': 'fr_CA',
             'zh-CN': 'zh_CN',
             'es-419': 'es_419',
