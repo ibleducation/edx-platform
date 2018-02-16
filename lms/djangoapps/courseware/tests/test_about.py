@@ -131,10 +131,10 @@ class AboutTestCase(LoginEnrollmentTestCase, SharedModuleStoreTestCase, EventTra
         resp = self.client.get(url)
         # should be redirected
         self.assertEqual(resp.status_code, 302)
-        # follow this time, and check we're redirected to the course info page
+        # follow this time, and check we're redirected to the course home page
         resp = self.client.get(url, follow=True)
         target_url = resp.redirect_chain[-1][0]
-        info_url = reverse('info', args=[text_type(self.course.id)])
+        info_url = reverse('openedx.course_experience.course_home', args=[text_type(self.course.id)])
         self.assertTrue(target_url.endswith(info_url))
 
     @patch.dict(settings.FEATURES, {'ENABLE_PREREQUISITE_COURSES': True})
