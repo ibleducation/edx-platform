@@ -6,6 +6,7 @@ import json
 
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
+from django.test import override_settings
 from mock import Mock, patch
 from six import text_type
 

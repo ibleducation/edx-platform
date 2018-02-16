@@ -14,7 +14,6 @@ from student.tests.factories import UserFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory
 
-from .. import models, waffle
 from ..utils import format_social_link, validate_social_link
 
 
@@ -75,12 +74,12 @@ class CompletionUtilsTestCase(SharedModuleStoreTestCase, CompletionWaffleTestMix
         # setUpClassAndTestData() already calls setUpClass on SharedModuleStoreTestCase
         with super(CompletionUtilsTestCase, cls).setUpClassAndTestData():
             cls._overrider = waffle.waffle().override(waffle.ENABLE_COMPLETION_TRACKING, True)
-            cls._overrider.__enter__()  # pylint: disable=no-member
+            cls._overrider.__enter__()
             cls.engaged_user = UserFactory.create()
             cls.cruft_user = UserFactory.create()
             cls.course = cls.create_test_course()
             cls.submit_faux_completions()
-            cls.addCleanup(cls._overrider.__exit__, None, None, None)  # pylint: disable=no-member
+            cls.addCleanup(cls._overrider.__exit__, None, None, None)
 
     @classmethod
     def create_test_course(cls):
