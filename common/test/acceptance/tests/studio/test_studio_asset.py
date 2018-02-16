@@ -80,20 +80,59 @@ class AssetIndexTestStudioFrontend(StudioCourseTest):
         self.asset_page.visit()
         assert self.asset_page.filter_element_on_page() is True
 
-    def test_correct_filters_exist(self):
+    # def test_correct_filters_exist(self):
+    #     """
+    #     Make sure type filter is on the page.
+    #     """
+    #     self.asset_page.visit()
+    #     assert self.asset_page.correct_filters__in_filter_element() is True
+    #
+    # def test_correct_filters_exist(self):
+    #     """
+    #     Make sure type filter is on the page.
+    #     """
+    #     self.asset_page.visit()
+    #     assert self.asset_page.correct_filters__in_filter_element() is True
+
+    def test_clicking_filter_with_results(self):
         """
-        Make sure type filter is on the page.
+        Make sure clicking a type filter that has results performs the filtering
+        correctly.
         """
         self.asset_page.visit()
-        assert self.asset_page.correct_filters__in_filter_element() is True
+        all_results = len(self.asset_page.return_results_set())
+        # select Images
+        if self.asset_page.select_type_filter(3):
+            filtered_results = len(self.asset_page.return_results_set())
+            assert all_results > filtered_results
+        else:
+            msg = "Could not select filter"
+            raise StudioApiL
 
-    def test_correct_filters_exist(self):
+    def test_clicking_filter_without_results(self):
         """
-        Make sure type filter is on the page.
+        Make sure clicking a type filter that has no results performs the filtering
+        correctly, updates the page view to display the no_results view, hides the pagination
+        element, and hides the table.
         """
         self.asset_page.visit()
-        assert self.asset_page.correct_filters__in_filter_element() is True
+        all_results = len(self.asset_page.return_results_set())
+        # select Audio
+        if self.asset_page.select_type_filter(0):
+            filtered_results = len(self.asset_page.return_results_set())
+            # assert self.asset_page.type_filter_header_label_visible()
+            assert all_results > filtered_results
+            assert filtered_results == 0
+            assert not self.asset_page.sortable_element_on_page()
+            assert not self.asset_page.table_element_on_page()
+            # TODO check for h3, h4, clear filter button
+            # import pudb; pudb.set_trace()
+        else:
+            msg = "Could not select filter"
+            raise StudioApiL
 
+
+    # def test_clicking_filter_without_results(self):
 
 
     def test_upload_element_exists(self):

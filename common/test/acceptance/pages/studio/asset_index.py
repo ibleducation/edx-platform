@@ -96,6 +96,7 @@ class AssetIndexPageStudioFrontend(CoursePage):
     """
 
     url_path = "assets"
+    type_filter_element = ".filter-set .form-group"
 
     @property
     def url(self):
@@ -120,7 +121,7 @@ class AssetIndexPageStudioFrontend(CoursePage):
         Returns:
             list: Uploaded files.
         """
-        import pudb; pudb.set_trace()
+        # import pudb; pudb.set_trace()
         return self.q(css='.table-responsive tbody tr td:nth-child(2)').text
 
     @property
@@ -159,6 +160,10 @@ class AssetIndexPageStudioFrontend(CoursePage):
         """
         return self.q(css='.drop-zone').present
 
+    # @wait_for_js
+    # def get_filter_element_on_page(self):
+    #     return self.q(css='.filter-set .form-group').execute()
+
     #
     # Should we add an id value to the div surrounding the assets filters?
     # self.q(css='div[@role = group]').present
@@ -169,9 +174,8 @@ class AssetIndexPageStudioFrontend(CoursePage):
         Checks that type filter heading and checkboxes are on the page.
         """
         return all([
-            self.q(css='.filter-heading').present,
-            self.q(css='.filter-set').present,
-            self.q(css='.form-group').present,
+            self.q(css='.filter-heading').is_present(),
+            self.q(css=self.type_filter_element).is_present(),
         ])
 
     def number_of_filters(self):
@@ -195,22 +199,19 @@ class AssetIndexPageStudioFrontend(CoursePage):
     #     """
     #     self.q(css=".asInput__form-check-input #Images").click()
 
-    # @wait_for_js
-    # def select_type_filter(self, filter_number):
-    #     """
-    #     Selects Images Type filter checkbox which filters the results.
-    #     Returns False if no filter.
-    #     """
-    #     self.wait_for_ajax()
-    #     if self.q(css=".filterable-column .nav-item").is_present():
-    #         if not self.q(css=self.type_filter_element + " .wrapper-nav-sub").visible:
-    #             self.q(css=".filterable-column > .nav-item").first.click()
-    #         self.wait_for_element_visibility(
-    #             self.type_filter_element + " .wrapper-nav-sub", "Type Filter promise satisfied.")
-    #         self.q(css=self.type_filter_element + " .column-filter-link").nth(filter_number).click()
-    #         self.wait_for_ajax()
-    #         return True
-    #     return False
+    @wait_for_js
+    def select_type_filter(self, filter_number):
+        """
+        Selects Images Type filter checkbox which filters the results.
+        Returns False if no filter.
+        """
+        self.wait_for_ajax()
+        # import pudb; pudb.set_trace()
+        if self.filter_element_on_page():
+            self.q(css=self.type_filter_element + ' .form-check .form-check-input').nth(filter_number).click()
+            self.wait_for_ajax()
+            return True
+        return False
 
     @wait_for_js
     def sortable_element_on_page(self):
