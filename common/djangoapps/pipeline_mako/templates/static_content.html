@@ -102,6 +102,7 @@ source, template_path = Loader(engine).load_template_source(path)
         localeData = ""
 
         if locale != 'en':
+            # because en is the default, studio-frontend will have it loaded by default
             ietf_to_transifex = {
                 'fr': 'fr_CA',
                 'zh-CN': 'zh_CN',
@@ -116,12 +117,12 @@ source, template_path = Loader(engine).load_template_source(path)
             with open(messages_path) as inputfile:
                 messages = inputfile.read()
 
-        localeData_path = "{base}/studio-frontend/dist/i18n/locale_data/{locale}.json".format(
-            base=settings.STATIC_ROOT_BASE,
-            locale=locale.split('-')[0]
-        )
-        with open(localeData_path) as inputfile:
-            localeData = inputfile.read()
+            localeData_path = "{base}/studio-frontend/dist/i18n/locale_data/{locale}.json".format(
+                base=settings.STATIC_ROOT_BASE,
+                locale=locale.split('-')[0]
+            )
+            with open(localeData_path) as inputfile:
+                localeData = inputfile.read()
     %>
     <script type="application/javascript" id="SFE_i18n_messages">
       ${ messages | n, decode.utf8};
