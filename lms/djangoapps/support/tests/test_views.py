@@ -480,8 +480,8 @@ class SupportViewCourseEntitlementsTests(SupportViewTestCase):
                 'entitlement_uuid': unicode(expired_entitlement.uuid),
                 'reason': 'LEAVE'
             }),
+            content_type='application/json'
         )
-        from pdb import set_trace; set_trace()
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertEqual(len(data['support_details']), 1)
@@ -489,7 +489,7 @@ class SupportViewCourseEntitlementsTests(SupportViewTestCase):
             'support_user': self.user.username,
             'reason': 'LEAVE',
             'comments': None,
-            'unenrolled_run': selected_run.course_id
+            'unenrolled_run': unicode(selected_run.course_id)
         }, data['support_details'][0])
 
     def test_create_entitlement(self):
@@ -504,10 +504,10 @@ class SupportViewCourseEntitlementsTests(SupportViewTestCase):
             }),
             content_type='application/json',
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         data = json.loads(response.content)
         self.assertEqual(len(data['support_details']), 1)
-        sself.assertDictContainsSubset({
+        self.assertDictContainsSubset({
             'support_user': self.user.username,
             'reason': 'LEARNER_NEW',
             'comments': None,

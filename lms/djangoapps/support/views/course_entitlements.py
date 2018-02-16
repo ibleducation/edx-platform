@@ -79,7 +79,6 @@ class EntitlementSupportView(viewsets.ModelViewSet):
                     unenrolled_run=unenrolled_run, support_user=support_user
                 )
             return Response(
-                status=status.HTTP_201_CREATED,
                 data=SupportCourseEntitlementSerializer(instance=entitlement).data
             )
         except DatabaseError:
