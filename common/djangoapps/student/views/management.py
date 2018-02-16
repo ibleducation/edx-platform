@@ -6,13 +6,13 @@ import datetime
 import json
 import logging
 import uuid
+import warnings
 from collections import namedtuple
 
 import analytics
 import dogstats_wrapper as dog_stats_api
-import warnings
-from bulk_email.models import Optout  # pylint: disable=import-error
-from courseware.courses import get_courses, sort_by_announcement, sort_by_start_date  # pylint: disable=import-error
+from bulk_email.models import Optout
+from courseware.courses import get_courses, sort_by_announcement, sort_by_start_date
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as django_login
