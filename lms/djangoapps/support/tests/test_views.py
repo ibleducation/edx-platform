@@ -24,7 +24,7 @@ from entitlements.tests.factories import CourseEntitlementFactory
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from student.models import ENROLLED_TO_ENROLLED, CourseEnrollment, ManualEnrollmentAudit
 from student.roles import GlobalStaff, SupportStaffRole
-from student.tests.factories import CourseEnrollmentFactory, UserFactory
+from student.tests.factories import (TEST_PASSWORD, CourseEnrollmentFactory, UserFactory)
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
@@ -444,28 +444,72 @@ class SupportViewCourseEntitlementsTests(SupportViewTestCase):
 
     def setUp(self):
         super(SupportViewCourseEntitlementsTests, self).setUp()
+        self.user = UserFactory(is_staff=True)
         SupportStaffRole().add_users(self.user)
+        self.client.login(username=self.user.username, password=TEST_PASSWORD)
 
         self.student = UserFactory.create(username='student', email='test@example.com', password='test')
         self.course_uuid = uuid4()
-
-        CourseEntitlementFactory.create(mode=CourseMode.VERIFIED, user=self.student, course_uuid=self.course_uuid)
 
         self.url = reverse('support:course_entitlement')
 
     @ddt.data('username', 'email')
     def test_get_entitlements(self, search_string_type):
-        from pdb import set_trace; set_trace()
-        url = self.url + '?username_or_email=' + getattr(self.student, search_string_type)
+        CourseEntitlementFactory.create(mode=CourseMode.VERIFIED, user=self.student, course_uuid=self.course_uuid)
+        url = self.url + getattr(self.student, search_string_type)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertEqual(len(data), 1)
         self.assertDictContainsSubset({
             'user': self.student.username,
-            'course_uuid': self.course_uuid,
+            'course_uuid': unicode(self.course_uuid),
             'enrollment_course_run': None,
             'mode': CourseMode.VERIFIED,
             'support_details': []
         }, data[0])
-        
+
+    def test_reinstate_entitlement(self):
+        selected_run = CourseEnrollmentFactory(mode=CourseMode.VERIFIED, user=self.student)
+        expired_entitlement = CourseEntitlementFactory.create(
+            mode=CourseMode.VERIFIED, user=self.student, enrollment_course_run=selected_run, expired_at=datetime.now()
+        )
+        url = self.url + self.student.username
+        response = self.client.put(url, data=json.dumps(
+            {
+                'entitlement_uuid': unicode(expired_entitlement.uuid),
+                'reason': 'LEAVE'
+            }),
+        )
+        from pdb import set_trace; set_trace()
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(len(data['support_details']), 1)
+        self.assertDictContainsSubset({
+            'support_user': self.user.username,
+            'reason': 'LEAVE',
+            'comments': None,
+            'unenrolled_run': selected_run.course_id
+        }, data['support_details'][0])
+
+    def test_create_entitlement(self):
+        expired_entitlement = CourseEntitlementFactory.create(
+            mode=CourseMode.VERIFIED, user=self.student, course_uuid=self.course_uuid, expired_at=datetime.now()
+        )
+        url = self.url + self.student.username
+        response = self.client.post(url, data=json.dumps({
+            'course_uuid': unicode(self.course_uuid),
+            'reason': 'LEARNER_NEW',
+            'mode': CourseMode.VERIFIED
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(len(data['support_details']), 1)
+        sself.assertDictContainsSubset({
+            'support_user': self.user.username,
+            'reason': 'LEARNER_NEW',
+            'comments': None,
+            'unenrolled_run': None
+        }, data['support_details'][0])

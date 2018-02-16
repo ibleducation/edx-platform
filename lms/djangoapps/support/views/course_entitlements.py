@@ -29,7 +29,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
     serializer_class = SupportCourseEntitlementSerializer
 
     @method_decorator(require_support_permission)
-    def list(self, request, username_or_email):
+    def list(self, request, username_or_email):  # pylint: disable=unused-argument
         """
         Returns a list of course entitlements for the given user, along with details of any
         support team interactions with each of the course entitlements.
@@ -42,7 +42,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
         return Response(self.serializer_class(self.queryset.filter(user=user), many=True).data)
 
     @method_decorator(require_support_permission)
-    def update(self, request, username_or_email):
+    def update(self, request, username_or_email):  # pylint: disable=unused-argument
         """ Allows support staff to update an existing course entitlement. """
         support_user = request.user
         entitlement_uuid = request.data.get('entitlement_uuid')
@@ -87,7 +87,7 @@ class EntitlementSupportView(viewsets.ModelViewSet):
                 u'Failed to reinstate entitlement {entitlement}'.format(entitlement=entitlement))
 
     @method_decorator(require_support_permission)
-    def create(self, request, username_or_email):
+    def create(self, request, username_or_email):  # pylint: disable=arguments-differ
         """ Allows support staff to grant a user a new entitlement for a course. """
         support_user = request.user
         comments = request.data.get('comments', None)
