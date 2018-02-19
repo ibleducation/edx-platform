@@ -103,10 +103,7 @@ def async_migrate_transcript(*args, **kwargs):
     file_format = None
     LOGGER.info("Locating videos for Course %s ... ", course_key)
     all_videos = get_videos_from_store(course_key)
-#    store = modulestore()
-    #TODO: search for draft_only also
-#    for video in store.get_items(CourseKey.from_string(course_key), qualifiers={'category': 'video'},
-#                                 revision=ModuleStoreEnum.RevisionOption.published_only, include_orphans=False):
+
     for video in all_videos:
         other_lang_transcripts = video.transcripts
         english_transcript = video.sub
