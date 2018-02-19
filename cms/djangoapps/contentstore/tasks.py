@@ -55,6 +55,7 @@ from xmodule.exceptions import NotFoundError
 
 from edxval.api import create_video_transcript, is_transcript_available, create_or_update_video_transcript
 from django.core.files.base import ContentFile
+from collections import defaultdict
 
 import mimetypes
 
@@ -101,10 +102,12 @@ def async_migrate_transcript(*args, **kwargs):
     force_update = kwargs['force_update']
     file_format = None
     LOGGER.info("Locating videos for Course %s ... ", course_key)
-    store = modulestore()
+    all_videos = get_videos_from_store(course_key)
+#    store = modulestore()
     #TODO: search for draft_only also
-    for video in store.get_items(CourseKey.from_string(course_key), qualifiers={'category': 'video'},
-                                 revision=ModuleStoreEnum.RevisionOption.published_only, include_orphans=False):
+#    for video in store.get_items(CourseKey.from_string(course_key), qualifiers={'category': 'video'},
+#                                 revision=ModuleStoreEnum.RevisionOption.published_only, include_orphans=False):
+    for video in all_videos:
         other_lang_transcripts = video.transcripts
         english_transcript = video.sub
 
@@ -123,6 +126,20 @@ def async_migrate_transcript(*args, **kwargs):
                 elif not transcript_already_present:
                     migrate_transcript(video, lang, name)
 
+def get_videos_from_store(course_key):
+    store = modulestore()
+    all_videos = []
+    for video in store.get_items(CourseKey.from_string(course_key), qualifiers={'category': 'video'},
+                                 revision=ModuleStoreEnum.RevisionOption.published_only, include_orphans=False):
+        all_videos.append(video)
+
+    for video in store.get_items(CourseKey.from_string(course_key), qualifiers={'category': 'video'},
+                                 revision=ModuleStoreEnum.RevisionOption.draft_only, include_orphans=False):
+        all_videos.append(video)
+
+    return all_videos
+
+
 
 def migrate_transcript(video, language_code, transcript_name, force_update=False):
     try:
@@ -139,7 +156,7 @@ def migrate_transcript(video, language_code, transcript_name, force_update=False
 
 def push_to_s3(edx_video_id, language_code, transcript_content, force_update=False):
     try:
-        # with transaction.atomic():
+        # with transaction.atomic()
         file_format = None
         for key, type in dict(Transcript.mime_types).iteritems():
             if transcript_content.content_type in type:

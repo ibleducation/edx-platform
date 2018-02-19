@@ -1,15 +1,54 @@
 """
 Test for course transcript migration.
 """
-import shutil
-from tempfile import mkdtemp
 
-
-
+from django.test import TestCase
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory
+from django.core.management import call_command, CommandError
+from edxval.api import get_videos_for_course
+from xmodule.video_module.transcripts_utils import download_youtube_subs, save_to_store
+
+
+SRT_FILEDATA = '''
+0
+00:00:00,270 --> 00:00:02,720
+sprechen sie deutsch?
+
+1
+00:00:02,720 --> 00:00:05,430
+Ja, ich spreche Deutsch
+'''
+
+CRO_SRT_FILEDATA = '''
+0
+00:00:00,270 --> 00:00:02,720
+Dobar dan!
+
+1
+00:00:02,720 --> 00:00:05,430
+Kako ste danas?
+'''
+
+
+class TestArgParsing(TestCase):
+    """
+    Tests for parsing arguments for the `migrate_transcripts` management command
+    """
+    def setUp(self):
+        super(TestArgParsing, self).setUp()
+
+    def test_no_args(self):
+        errstring = "Error: too few arguments"
+        with self.assertRaisesRegexp(CommandError, errstring):
+            call_command('migrate_transcripts')
+
+    def test_invalid_course(self):
+        with self.assertRaises(CommandError):
+            call_command('migrate_transcripts', "invalid-course")
+
 
 
 class MigrateTranscripts(ModuleStoreTestCase):
@@ -21,81 +60,69 @@ class MigrateTranscripts(ModuleStoreTestCase):
         super(MigrateTranscripts, self).setUp()
         self.store = modulestore()._get_modulestore_by_type(ModuleStoreEnum.Type.mongo)
 
-        self.course1 = CourseFactory.create(
-            org="test",
-            course="course1",
-            display_name="run1",
-            default_store=ModuleStoreEnum.Type.mongo
-        )
-        chapter_course1 = ItemFactory.create(
-            category='chapter',
-            parent_location=self.course1.location,
-            display_name='Test Chapter'
-        )
-        sequential_course1 = ItemFactory.create(
-            category='sequential',
-            parent_location=chapter_course1.location,
-            display_name='Test Sequential'
-        )
-        vertical_course1 = ItemFactory.create(
-            category='vertical',
-            parent_location=sequential_course1.location,
-            display_name='Test Vertical'
-        )
-        video_course1 = ItemFactory.create(
-            category='video',
-            parent_location=vertical_course1.location,
-            display_name='Test Vertical'
-        )
-        self.course1_vertical_location = vertical_course1.location
-        self.course1_video_location = video_course1.location
+        self.course = CourseFactory.create()
 
-        self.course2 = CourseFactory.create(
-            org="test",
-            course="course2",
-            display_name="run2",
-            default_store=ModuleStoreEnum.Type.mongo
+        video_sample_xml = '''
+            <video display_name="Test Video"
+                   youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
+                   show_captions="false"
+                   download_track="false"
+                   start_time="00:00:01"
+                   download_video="false"
+                   end_time="00:01:00">
+              <source src="http://www.example.com/source.mp4"/>
+              <track src="http://www.example.com/track"/>
+              <handout src="http://www.example.com/handout"/>
+              <transcript language="ge" src="subs_grmtran1.srt" />
+              <transcript language="hr" src="subs_croatian1.srt" />
+            </video>
+        '''
+        self.video_descriptor = ItemFactory.create(
+            parent_location=self.course.location, category='video',
+            data={'data': video_sample_xml}
         )
-        chapter_course2 = ItemFactory.create(
-            category='chapter',
-            parent_location=self.course2.location,
-            display_name='Test Chapter'
-        )
-        sequential_course2 = ItemFactory.create(
-            category='sequential',
-            parent_location=chapter_course2.location,
-            display_name='Test Sequential'
-        )
-        vertical_course2 = ItemFactory.create(
-            category='vertical',
-            parent_location=sequential_course2.location,
-            display_name='Test Vertical'
-        )
-        video_course2 = ItemFactory.create(
-            category='video',
-            parent_location=vertical_course2.location,
-            display_name='Test Vertical'
-        )
-        self.course2_vertical_location = vertical_course2.location
-        self.course2_video_location = video_course2.location
+
+        save_to_store(SRT_FILEDATA, "subs_grmtran1.srt", 'text/srt', self.video_descriptor.location)
+        save_to_store(CRO_SRT_FILEDATA, "subs_croatian1.srt", 'text/srt', self.video_descriptor.location)
 
 
     def test_migrate_transcripts(self):
         """
-        Test migrating two courses
+        Test migrating transcripts
         """
-        # check that both courses are migrated successfully
-        courses, failed_export_courses = export_courses_to_output_path(self.temp_dir)
-        self.assertEqual(len(courses), 2)
-        self.assertEqual(len(failed_export_courses), 0)
 
-        # manually make second course faulty and check that it fails on export
-        second_course_id = self.second_course.id
-        self.store.collection.update(
-            {'_id.org': second_course_id.org, '_id.course': second_course_id.course, '_id.name': second_course_id.run},
-            {'$set': {'metadata.tags': 'crash'}}
-        )
-        courses, failed_export_courses = export_courses_to_output_path(self.temp_dir)
-        self.assertEqual(len(courses), 2)
-        self.assertEqual(len(failed_export_courses), 1)
-        self.assertEqual(failed_export_courses[0], unicode(second_course_id))
+        videos = list(get_videos_for_course(self.course.id))
+        self.assertEqual(1, len(videos))
+
+        self.assertEqual(self.video_descriptor.index_dictionary(), {
+            "content": {
+                "display_name": "Test Video",
+                "transcript_ge": "sprechen sie deutsch? Ja, ich spreche Deutsch",
+                "transcript_hr": "Dobar dan! Kako ste danas?"
+            },
+            "content_type": "Video"
+        })
+
+        translations = self.video_descriptor.available_translations(self.video_descriptor.get_transcripts_info())
+        self.assertEqual(translations, ['hr', 'ge'])
+
+
+        # now call migrate_transcripts command and check the transcript integrity
+
+        call_command('migrate_transcripts', 'cms', self.course.id)
+
+        videos = list(get_videos_for_course(self.course.id))
+        self.assertEqual(1, len(videos))
+
+        self.assertEqual(self.video_descriptor.index_dictionary(), {
+            "content": {
+                "display_name": "Test Video",
+                "transcript_ge": "sprechen sie deutsch? Ja, ich spreche Deutsch",
+                "transcript_hr": "Dobar dan! Kako ste danas?"
+            },
+            "content_type": "Video"
+        })
+
+        translations = self.video_descriptor.available_translations(self.video_descriptor.get_transcripts_info())
+        self.assertEqual(translations, ['hr', 'ge'])
+
